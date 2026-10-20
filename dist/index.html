@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Low-Poly Island — Atmospheric DnB Adventure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/index-D_pXo8IS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-3h1Ip-9L.css">
+  </head>
+  <body>
+    <!-- 3D Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- Retro CRT / Vignette Filter Overlay -->
+    <div id="retro-overlay"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+      <!-- Top Bar: Location & Time -->
+      <header class="top-bar">
+        <div class="zone-badge">
+          <span class="dot live-pulse"></span>
+          <span class="zone-name" id="zone-name">COASTAL HAVEN // PIER SECTOR</span>
+        </div>
+        <div class="time-display" id="time-display">TWILIGHT 19:42</div>
+        <div class="top-bar-right">
+          <div class="speed-badge" id="speed-badge">WALK 7 M/S</div>
+          <div class="fps-display" id="fps-display">60 FPS</div>
+        </div>
+      </header>
+
+      <!-- Center Action Prompt (e.g. "[E] Ride Bicycle", "[E] Talk") -->
+      <div id="action-prompt" class="action-prompt hidden">
+        <span class="key-badge">E</span>
+        <span class="prompt-text" id="action-text">INTERACT</span>
+      </div>
+
+      <!-- Bottom UI Bar: Controls (Lower Left) & Walkman (Lower Right) -->
+      <footer class="bottom-bar">
+        <!-- Lower Left: Compact Hover-Growing Controls Panel -->
+        <div class="controls-overlay" id="controls-panel">
+          <div class="cam-badge-row">
+            <div class="cam-badge" id="cam-badge" title="Toggle 1st / 3rd Person View">
+              <span class="label">VIEW:</span>
+              <span class="mode" id="cam-mode-text">3RD PERSON [V]</span>
+            </div>
+            <button class="cam-option-btn" id="arrow-mode-btn" title="Toggle Arrow Keys Camera Control">
+              ARROWS: CAM
+            </button>
+            <button class="cam-option-btn" id="pointer-lock-btn" title="Lock Cursor for 1-Finger Look (ESC to release)">
+              LOCK
+            </button>
+            <button class="cam-option-btn" id="retro-res-btn" title="Toggle PS1 Pixelation vs HD Mode">
+              PS1 PIXELS
+            </button>
+            <button class="cam-option-btn alt-mode" id="sky-theme-btn" title="Cycle Sunset Palette (or press [T])">
+              CYCLE [T]
+            </button>
+          </div>
+          <!-- Sunset Palette Selector -->
+          <div class="sunset-selector-row">
+            <span class="sunset-label">SUNSET:</span>
+            <div class="sunset-btn-group" id="sunset-btn-group">
+              <button class="sunset-opt-btn active" data-theme="GOLDEN_HOUR" title="Golden Hour Sunset">☀️ GOLDEN</button>
+              <button class="sunset-opt-btn" data-theme="CRIMSON_DUSK" title="Crimson Coral Sunset">🌅 CRIMSON</button>
+              <button class="sunset-opt-btn" data-theme="TROPICAL_MANGO" title="Tropical Mango Sunset">🥭 TROPICAL</button>
+              <button class="sunset-opt-btn" data-theme="PASTEL_PEACH" title="Pastel Peach Dusk">🌸 PEACH</button>
+              <button class="sunset-opt-btn" data-theme="AFTERNOON_GOLD" title="Afternoon Sunshine">✨ AFTERNOON</button>
+            </div>
+          </div>
+          <div class="controls-hints">
+            <div class="hint-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move/Drive &nbsp;<kbd>TRACKPAD</kbd> Orbit</div>
+            <div class="hint-row"><kbd>SHIFT</kbd> Run (14) / Zoom (24) / <span style="color:#ffb74d">Quad Nitro (46 m/s)</span></div>
+            <div class="hint-row"><kbd>SPACE</kbd> Jump/Stunt Launch &nbsp;<kbd>V</kbd> View &nbsp;<kbd>T</kbd> Sky &nbsp;<kbd>E</kbd> Drive</div>
+          </div>
+        </div>
+
+        <!-- Lower Right: Retro Walkman / Atmospheric DnB Player -->
+        <div class="walkman-player" id="walkman">
+          <div class="walkman-header">
+            <span class="brand">SONO-98 // ATMOSPHERIC DNB</span>
+            <span class="stereo-indicator">● STEREO</span>
+          </div>
+          <div class="cassette-window">
+            <div class="cassette-reel reel-left" id="reel-left"></div>
+            <div class="tape-label">
+              <div class="track-title" id="track-title">ATLANTIC BREEZE (LIQUID MIX)</div>
+              <div class="track-artist" id="track-artist">LOW-POLY SOUNDSYSTEM</div>
+            </div>
+            <div class="cassette-reel reel-right" id="reel-right"></div>
+          </div>
+          <div class="walkman-controls">
+            <button class="w-btn" id="btn-prev" title="Previous Track">⏮</button>
+            <button class="w-btn w-btn-play" id="btn-play" title="Play/Pause">▶ PLAY</button>
+            <button class="w-btn" id="btn-next" title="Next Track">⏭</button>
+            <div class="volume-slider-wrap">
+              <span>VOL</span>
+              <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="0.75" />
+            </div>
+          </div>
+          <div class="visualizer-bar" id="visualizer-bar">
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+            <div class="v-segment"></div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Entry script -->
+  </body>
+</html>
