@@ -132,6 +132,28 @@ export const SKY_THEMES = {
     sunIntensity: 3.2,
     sunDiscColor: 0xff4f38,  // Radiant golden-coral sunset disc
     haloColor: 0xffbb44      // Warm golden corona
+  },
+  NORDIC_TWILIGHT: {
+    id: 'NORDIC_TWILIGHT',
+    name: 'NORDIC TWILIGHT',
+    shortName: 'NORDIC',
+    vibe: 'Glacial Indigo Zenith & Pale Amber Fjord Glow',
+    topColor: 0x142036,      // Deep glacial navy
+    midColor: 0x3d5473,      // Crisp alpine twilight slate
+    horizonColor: 0xffbb6b,  // Soft glowing pale amber sunset
+    bottomColor: 0x0c1724,
+    fogColor: 0x22334a,      // Silvery misty fjord fog
+    fogNear: 80,
+    fogFar: 450,
+    ambientColor: 0xaecbe0,
+    ambientIntensity: 1.45,
+    hemiSky: 0xffddaa,
+    hemiGround: 0x1a2638,
+    hemiIntensity: 1.15,
+    sunColor: 0xffcc80,
+    sunIntensity: 2.2,
+    sunDiscColor: 0xfffae0,
+    haloColor: 0xffa040
   }
 };
 

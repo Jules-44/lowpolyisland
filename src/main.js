@@ -7,6 +7,7 @@ import { CameraController } from './entities/CameraController.js';
 import { QuadBike } from './entities/QuadBike.js';
 import { World } from './world/World.js';
 import { CyberCityWorld } from './world/CyberCityWorld.js';
+import { FjordWorld } from './world/FjordWorld.js';
 
 class GameApp {
   constructor() {
@@ -48,8 +49,10 @@ class GameApp {
     this.levelCloseBtn = document.getElementById('level-close-btn');
     this.launchIslandBtn = document.getElementById('launch-island-btn');
     this.launchCyberBtn = document.getElementById('launch-cyber-btn');
+    this.launchFjordBtn = document.getElementById('launch-fjord-btn');
     this.cardIsland = document.getElementById('card-level-island');
     this.cardCyber = document.getElementById('card-level-cyber');
+    this.cardFjord = document.getElementById('card-level-fjord');
 
     this.loadingModal = document.getElementById('loading-screen-modal');
     this.loadingBarFill = document.getElementById('loading-bar-fill');
@@ -125,7 +128,21 @@ class GameApp {
       });
     }
 
-    // Keyboard Shortcuts: 'L' toggles, '1' loads Island, '2' loads CyberCity, 'ESC' closes
+    // Launch Level 3 (Nordic Fjords)
+    if (this.launchFjordBtn) {
+      this.launchFjordBtn.addEventListener('click', () => {
+        this.loadLevel('fjord');
+      });
+    }
+    if (this.cardFjord) {
+      this.cardFjord.addEventListener('click', (e) => {
+        if (e.target !== this.launchFjordBtn && !this.launchFjordBtn.contains(e.target)) {
+          this.loadLevel('fjord');
+        }
+      });
+    }
+
+    // Keyboard Shortcuts: 'L' toggles, '1' loads Island, '2' loads CyberCity, '3' loads Fjord, 'ESC' closes
     this.inputManager.onLevelSelect = () => {
       this.toggleLevelSelect();
     };
@@ -139,6 +156,9 @@ class GameApp {
       }
       if (e.code === 'Digit2' && !this.isLoading) {
         this.loadLevel('cybercity');
+      }
+      if (e.code === 'Digit3' && !this.isLoading) {
+        this.loadLevel('fjord');
       }
     });
   }
@@ -253,6 +273,21 @@ class GameApp {
         this.quadBike.heading = 0;
         this.quadBike.speed = 0;
         this.quadBike.velocityY = 0;
+      } else if (levelId === 'fjord') {
+        this.world = new FjordWorld(this.sceneManager.scene);
+        targetTheme = 'NORDIC_TWILIGHT';
+        trackIndex = 1; // TWILIGHT OVER THE REEF
+
+        // Spawn player on wooden village dock
+        this.player.position.set(-95, 3.8, -35);
+        this.player.rotation = Math.PI * 0.4;
+        this.player.velocity.set(0, 0, 0);
+
+        // Spawn Quad Bike by village trail entrance
+        this.quadBike.position.set(-88, 3.6, -30);
+        this.quadBike.heading = Math.PI * 0.5;
+        this.quadBike.speed = 0;
+        this.quadBike.velocityY = 0;
       }
 
       // 4. Apply sky atmosphere
@@ -282,7 +317,10 @@ class GameApp {
       setTimeout(() => {
         this.loadingModal.classList.add('hidden');
         this.isLoading = false;
-        this._showToast(levelId === 'island' ? '🌴 ENTERED COASTAL HAVEN // SUNSET ATOLL' : '🌆 ENTERED NEON METROPOLIS // HIGHWAY GRID');
+        let toast = '🌴 ENTERED COASTAL HAVEN // SUNSET ATOLL';
+        if (levelId === 'cybercity') toast = '🌆 ENTERED NEON METROPOLIS // HIGHWAY GRID';
+        if (levelId === 'fjord') toast = '🏔️ ENTERED NORDIC FJORDS // RORBU ARCHIPELAGO';
+        this._showToast(toast);
       }, 350);
     }
   }
