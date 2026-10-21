@@ -566,15 +566,15 @@ class GameApp {
 
     this.btnNext.addEventListener('click', () => {
       const track = this.audioEngine.nextTrack();
-      this.trackTitle.textContent = track.title;
-      this.trackArtist.textContent = track.artist;
+      this.trackTitle.textContent = track.displayTitle || track.title;
+      this.trackArtist.textContent = track.displayArtist || track.artist;
       this._updateWalkmanState(this.audioEngine.isPlaying);
     });
 
     this.btnPrev.addEventListener('click', () => {
       const track = this.audioEngine.prevTrack();
-      this.trackTitle.textContent = track.title;
-      this.trackArtist.textContent = track.artist;
+      this.trackTitle.textContent = track.displayTitle || track.title;
+      this.trackArtist.textContent = track.displayArtist || track.artist;
       this._updateWalkmanState(this.audioEngine.isPlaying);
     });
 

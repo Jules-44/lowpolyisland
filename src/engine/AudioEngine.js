@@ -1,8 +1,5 @@
-/**
- * AudioEngine — Procedural Atmospheric Drum & Bass synthesizer and ambient soundscape player.
- * Built with Web Audio API. Provides authentic 164 BPM rolling breakbeats, lush ambient pads,
- * deep sub bass, and coastal ocean wash.
- */
+import { CUSTOM_AUDIO_TRACKS } from '../config/audioTracks.js';
+
 export class AudioEngine {
   constructor() {
     this.ctx = null;
@@ -12,13 +9,23 @@ export class AudioEngine {
     this.visualizerData = new Uint8Array(16);
     this.analyser = null;
 
-    // Track presets
-    this.tracks = [
+    // HTML5 Audio element for custom file playback
+    this.audioEl = null;
+    this.mediaSourceNode = null;
+
+    // Track unlock registry (saved in localStorage)
+    this.unlockedTapes = new Set();
+    this._loadUnlockedTapes();
+
+    // Default procedural synthesizer track presets
+    this.proceduralTracks = [
       {
+        id: "synth_atlantic",
         title: "ATLANTIC BREEZE (LIQUID MIX)",
         artist: "LOW-POLY SOUNDSYSTEM",
         bpm: 164,
         key: "F#m9",
+        locked: false,
         chords: [
           [277.18, 369.99, 440.00, 554.37], // F#m9 (C#4, F#4, A4, C#5)
           [293.66, 369.99, 440.00, 587.33], // Dmaj7 (D4, F#4, A4, D5)
@@ -27,10 +34,12 @@ export class AudioEngine {
         ]
       },
       {
+        id: "synth_twilight",
         title: "TWILIGHT OVER THE REEF",
         artist: "ORBITAL RUNNER",
         bpm: 162,
         key: "Ebm7",
+        locked: false,
         chords: [
           [311.13, 369.99, 466.16, 554.37], // Ebm9
           [261.63, 329.63, 392.00, 523.25], // Cbmaj7
@@ -39,10 +48,12 @@ export class AudioEngine {
         ]
       },
       {
+        id: "synth_dreamcast",
         title: "DREAMCAST MEMORY (1998)",
         artist: "VIRTUAL HORIZON",
         bpm: 166,
         key: "C#m7",
+        locked: false,
         chords: [
           [277.18, 329.63, 415.30, 493.88], // C#m7
           [220.00, 277.18, 329.63, 440.00], // Amaj7
@@ -51,10 +62,12 @@ export class AudioEngine {
         ]
       },
       {
+        id: "synth_rooftops",
         title: "CYBER ROOFTOPS (TECHSTEP VIP)",
         artist: "NEO TOKYO UNIT",
         bpm: 166,
         key: "Dm9",
+        locked: false,
         chords: [
           [293.66, 349.23, 440.00, 523.25], // Dm7
           [261.63, 329.63, 392.00, 493.88], // Cmaj7
@@ -63,10 +76,12 @@ export class AudioEngine {
         ]
       },
       {
+        id: "synth_overpass",
         title: "NEON OVERPASS (LIQUID FUNK)",
         artist: "CIRCUIT RUNNER",
         bpm: 168,
         key: "Gm7",
+        locked: false,
         chords: [
           [392.00, 466.16, 587.33, 739.99], // Gm9
           [349.23, 440.00, 523.25, 659.25], // Fmaj7
@@ -76,20 +91,103 @@ export class AudioEngine {
       }
     ];
 
+    // Combine custom tracks with procedural presets
+    this.tracks = this._buildTrackList();
     this.currentTrackIndex = 0;
     this.currentChordIndex = 0;
     this.step = 0;
     this.timerId = null;
     this.oceanNode = null;
+
+    // Check for optional public/audio/playlist.json asynchronously
+    this._fetchPublicPlaylist();
+  }
+
+  _buildTrackList() {
+    const list = [];
+    // 1. Add any custom tracks from src/config/audioTracks.js
+    if (Array.isArray(CUSTOM_AUDIO_TRACKS) && CUSTOM_AUDIO_TRACKS.length > 0) {
+      CUSTOM_AUDIO_TRACKS.forEach((t) => {
+        if (t && t.title) list.push(t);
+      });
+    }
+    // 2. Add procedural synth tracks
+    this.proceduralTracks.forEach((pt) => list.push(pt));
+    return list;
+  }
+
+  async _fetchPublicPlaylist() {
+    try {
+      const res = await fetch('/audio/playlist.json');
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json) && json.length > 0) {
+          const valid = json.filter((t) => t.file && t.file.trim().length > 0);
+          if (valid.length > 0) {
+            // Prepend valid custom tracks
+            const formatted = valid.map((t) => ({
+              ...t,
+              file: t.file.startsWith('/') || t.file.startsWith('http') ? t.file : `/audio/${t.file}`
+            }));
+            this.tracks = [...formatted, ...this.proceduralTracks];
+            console.log(`[AudioEngine] Loaded ${formatted.length} custom audio tracks from /audio/playlist.json`);
+          }
+        }
+      }
+    } catch {
+      // Ignore if playlist.json is not present or invalid
+    }
+  }
+
+  _loadUnlockedTapes() {
+    try {
+      const stored = localStorage.getItem('lowpoly_unlocked_tapes');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.unlockedTapes = new Set(parsed);
+        }
+      }
+    } catch {
+      this.unlockedTapes = new Set();
+    }
+  }
+
+  unlockTape(tapeId) {
+    if (!tapeId) return null;
+    this.unlockedTapes.add(tapeId);
+    try {
+      localStorage.setItem('lowpoly_unlocked_tapes', JSON.stringify([...this.unlockedTapes]));
+    } catch {}
+
+    const unlocked = this.tracks.find((t) => t.tapeId === tapeId);
+    if (unlocked) {
+      unlocked.locked = false;
+      return unlocked;
+    }
+    return null;
+  }
+
+  isTrackLocked(track) {
+    if (!track) return false;
+    if (!track.locked) return false;
+    if (track.tapeId && this.unlockedTapes.has(track.tapeId)) {
+      return false;
+    }
+    return true;
   }
 
   setTrack(index) {
     if (index >= 0 && index < this.tracks.length) {
       this.currentTrackIndex = index;
-      this.bpm = this.tracks[index].bpm;
+      this.bpm = this.tracks[index].bpm || 164;
       this.currentChordIndex = 0;
       this.step = 0;
-      return this.tracks[this.currentTrackIndex];
+      if (this.isPlaying) {
+        this.stop();
+        this.play();
+      }
+      return this.getCurrentTrack();
     }
     return this.getCurrentTrack();
   }
@@ -115,7 +213,14 @@ export class AudioEngine {
   }
 
   getCurrentTrack() {
-    return this.tracks[this.currentTrackIndex];
+    const track = this.tracks[this.currentTrackIndex] || this.proceduralTracks[0];
+    const isLocked = this.isTrackLocked(track);
+    return {
+      ...track,
+      isLocked,
+      displayTitle: isLocked ? `📼 ${track.title} [LOCKED]` : track.title,
+      displayArtist: isLocked ? `FIND CASSETTE TAPE TO UNLOCK` : track.artist
+    };
   }
 
   setVolume(vol) {
@@ -144,11 +249,83 @@ export class AudioEngine {
       this.ctx.resume();
     }
     this.isPlaying = true;
+
+    const track = this.getCurrentTrack();
+
+    // If track is locked behind a tape collectible
+    if (this.isTrackLocked(track)) {
+      console.log(`[AudioEngine] Track "${track.title}" is locked. Find its cassette tape to unlock!`);
+      this.stop();
+      return;
+    }
+
+    // 1. If custom audio file is specified
+    if (track.file) {
+      this._playAudioFile(track);
+      return;
+    }
+
+    // 2. Fallback to procedural DnB synthesizer
+    this._playProceduralSynth(track);
+  }
+
+  _playAudioFile(track) {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+
+    if (!this.audioEl) {
+      this.audioEl = new Audio();
+      this.audioEl.crossOrigin = 'anonymous';
+      this.audioEl.addEventListener('ended', () => {
+        this.nextTrack();
+      });
+      this.audioEl.addEventListener('error', (e) => {
+        console.warn(`[AudioEngine] Could not load audio file "${track.file}". Falling back to procedural synth.`, e);
+        this._playProceduralSynth(track);
+      });
+    }
+
+    // Route audioEl through masterGain & analyser so Walkman visualizer and reels react!
+    if (!this.mediaSourceNode && this.ctx) {
+      try {
+        this.mediaSourceNode = this.ctx.createMediaElementSource(this.audioEl);
+        this.mediaSourceNode.connect(this.masterGain);
+      } catch (err) {
+        console.warn('[AudioEngine] MediaElementSource note:', err);
+      }
+    }
+
+    if (this.audioEl.src !== track.file && !this.audioEl.src.endsWith(track.file)) {
+      this.audioEl.src = track.file;
+      this.audioEl.load();
+    }
+
+    this.audioEl.play().catch((err) => {
+      console.warn(`[AudioEngine] Audio element play failed, falling back to synth:`, err);
+      this._playProceduralSynth(track);
+    });
+  }
+
+  _playProceduralSynth(track) {
+    if (this.audioEl && !this.audioEl.paused) {
+      this.audioEl.pause();
+    }
+
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+
     this.step = 0;
     this.currentChordIndex = 0;
+    this.bpm = track.bpm || 164;
 
     const interval = (60 / this.bpm) / 4 * 1000; // 16th note in ms
-    this._playPadChord();
+    if (track.chords && track.chords.length > 0) {
+      this._playPadChord();
+    }
     this.timerId = setInterval(() => {
       this._onTick();
     }, interval);
@@ -159,6 +336,9 @@ export class AudioEngine {
     if (this.timerId) {
       clearInterval(this.timerId);
       this.timerId = null;
+    }
+    if (this.audioEl && !this.audioEl.paused) {
+      this.audioEl.pause();
     }
   }
 
@@ -209,8 +389,10 @@ export class AudioEngine {
     // Deep sub / Reese bass trigger
     if (s === 0 || s === 6 || s === 10) {
       const track = this.tracks[this.currentTrackIndex];
-      const baseFreq = track.chords[this.currentChordIndex][0] / 4; // 2 octaves below
-      this._triggerSubBass(now, baseFreq);
+      if (track && track.chords && track.chords[this.currentChordIndex]) {
+        const baseFreq = track.chords[this.currentChordIndex][0] / 4; // 2 octaves below
+        this._triggerSubBass(now, baseFreq);
+      }
     }
 
     // Step progression
@@ -218,8 +400,10 @@ export class AudioEngine {
     // Advance chord every 32 steps (2 bars)
     if (this.step % 32 === 0) {
       const track = this.tracks[this.currentTrackIndex];
-      this.currentChordIndex = (this.currentChordIndex + 1) % track.chords.length;
-      this._playPadChord();
+      if (track && track.chords && track.chords.length > 0) {
+        this.currentChordIndex = (this.currentChordIndex + 1) % track.chords.length;
+        this._playPadChord();
+      }
     }
   }
 
