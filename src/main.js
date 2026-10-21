@@ -952,16 +952,22 @@ class GameApp {
           this.speedBadge.className = 'speed-badge';
         }
       } else {
-        const state = this.player.moveState;
-        if (state === 'ZOOM') {
-          this.speedBadge.textContent = '⚡ ZOOM 24 M/S';
-          this.speedBadge.className = 'speed-badge zoom';
-        } else if (state === 'RUN') {
-          this.speedBadge.textContent = 'RUN 14 M/S';
-          this.speedBadge.className = 'speed-badge run';
+        if (this.player.isGliding) {
+          const speedMps = Math.round(Math.hypot(this.player.velocity.x, this.player.velocity.z));
+          this.speedBadge.textContent = `🪂 GLIDER ${speedMps} M/S`;
+          this.speedBadge.className = 'speed-badge airtime';
         } else {
-          this.speedBadge.textContent = this.player.isMoving ? 'WALK 7 M/S' : 'IDLE';
-          this.speedBadge.className = 'speed-badge';
+          const state = this.player.moveState;
+          if (state === 'ZOOM') {
+            this.speedBadge.textContent = '⚡ ZOOM 24 M/S';
+            this.speedBadge.className = 'speed-badge zoom';
+          } else if (state === 'RUN') {
+            this.speedBadge.textContent = 'RUN 14 M/S';
+            this.speedBadge.className = 'speed-badge run';
+          } else {
+            this.speedBadge.textContent = this.player.isMoving ? 'WALK 7 M/S' : 'IDLE';
+            this.speedBadge.className = 'speed-badge';
+          }
         }
       }
     }

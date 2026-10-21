@@ -41,6 +41,7 @@ export class World {
     this._buildWindingPath();
     this._buildShrubs();
     this._buildStuntRamps();
+    this._buildBirds();
   }
 
   _buildOcean() {
@@ -2222,6 +2223,358 @@ export class World {
     this.rootGroup.add(this.rampsGroup);
   }
 
+  _createLowPolyBird(isPerched = false) {
+    const bird = new THREE.Group();
+
+    const featherMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc, flatShading: true });
+    const wingtipMat = new THREE.MeshLambertMaterial({ color: 0x334155, flatShading: true });
+    const beakMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b, flatShading: true });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+
+    // Torso (tapered low-poly body)
+    const bodyGeo = new THREE.BoxGeometry(0.24, 0.20, 0.54);
+    const body = new THREE.Mesh(bodyGeo, featherMat);
+    body.position.set(0, 0, 0);
+    body.castShadow = true;
+    bird.add(body);
+
+    // Chest & neck
+    const chestGeo = new THREE.BoxGeometry(0.22, 0.22, 0.28);
+    const chest = new THREE.Mesh(chestGeo, featherMat);
+    chest.position.set(0, 0.08, 0.20);
+    chest.castShadow = true;
+    bird.add(chest);
+
+    // Head group (can turn / twitch independently for perched birds)
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 0.16, 0.32);
+
+    const headGeo = new THREE.BoxGeometry(0.18, 0.18, 0.22);
+    const head = new THREE.Mesh(headGeo, featherMat);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // Beak
+    const beakGeo = new THREE.ConeGeometry(0.065, 0.22, 4);
+    beakGeo.rotateX(Math.PI / 2);
+    const beak = new THREE.Mesh(beakGeo, beakMat);
+    beak.position.set(0, -0.02, 0.18);
+    beak.castShadow = true;
+    headGroup.add(beak);
+
+    // Eyes
+    const eyeGeo = new THREE.BoxGeometry(0.035, 0.035, 0.035);
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(0.095, 0.03, 0.04);
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(-0.095, 0.03, 0.04);
+    headGroup.add(leftEye);
+    headGroup.add(rightEye);
+
+    bird.add(headGroup);
+
+    // Tail feathers
+    const tailGeo = new THREE.BoxGeometry(0.18, 0.04, 0.36);
+    const tail = new THREE.Mesh(tailGeo, wingtipMat);
+    tail.position.set(0, 0.02, -0.38);
+    tail.rotation.x = -0.12;
+    tail.castShadow = true;
+    bird.add(tail);
+
+    let leftWingGroup = null;
+    let rightWingGroup = null;
+
+    if (isPerched) {
+      // Folded wings along the flanks
+      const foldedWingGeo = new THREE.BoxGeometry(0.05, 0.18, 0.44);
+      const leftFolded = new THREE.Mesh(foldedWingGeo, wingtipMat);
+      leftFolded.position.set(0.13, 0.02, -0.06);
+      leftFolded.rotation.x = -0.1;
+      const rightFolded = new THREE.Mesh(foldedWingGeo, wingtipMat);
+      rightFolded.position.set(-0.13, 0.02, -0.06);
+      rightFolded.rotation.x = -0.1;
+      bird.add(leftFolded);
+      bird.add(rightFolded);
+
+      // Standing legs
+      const legMat = new THREE.MeshLambertMaterial({ color: 0xd97706, flatShading: true });
+      const legGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.16, 4);
+      const leftLeg = new THREE.Mesh(legGeo, legMat);
+      leftLeg.position.set(0.07, -0.16, 0);
+      const rightLeg = new THREE.Mesh(legGeo, legMat);
+      rightLeg.position.set(-0.07, -0.16, 0);
+      bird.add(leftLeg);
+      bird.add(rightLeg);
+    } else {
+      // Articulated wings for flight
+      leftWingGroup = new THREE.Group();
+      leftWingGroup.position.set(0.12, 0.05, 0.04);
+
+      const leftInnerGeo = new THREE.BoxGeometry(0.55, 0.028, 0.24);
+      const leftInner = new THREE.Mesh(leftInnerGeo, featherMat);
+      leftInner.position.set(0.275, 0, 0);
+      leftInner.castShadow = true;
+      leftWingGroup.add(leftInner);
+
+      const leftTipGeo = new THREE.BoxGeometry(0.42, 0.022, 0.18);
+      const leftTip = new THREE.Mesh(leftTipGeo, wingtipMat);
+      leftTip.position.set(0.72, 0, -0.04);
+      leftTip.rotation.y = -0.14;
+      leftTip.castShadow = true;
+      leftWingGroup.add(leftTip);
+
+      bird.add(leftWingGroup);
+
+      rightWingGroup = new THREE.Group();
+      rightWingGroup.position.set(-0.12, 0.05, 0.04);
+
+      const rightInnerGeo = new THREE.BoxGeometry(0.55, 0.028, 0.24);
+      const rightInner = new THREE.Mesh(rightInnerGeo, featherMat);
+      rightInner.position.set(-0.275, 0, 0);
+      rightInner.castShadow = true;
+      rightWingGroup.add(rightInner);
+
+      const rightTipGeo = new THREE.BoxGeometry(0.42, 0.022, 0.18);
+      const rightTip = new THREE.Mesh(rightTipGeo, wingtipMat);
+      rightTip.position.set(-0.72, 0, -0.04);
+      rightTip.rotation.y = 0.14;
+      rightTip.castShadow = true;
+      rightWingGroup.add(rightTip);
+
+      bird.add(rightWingGroup);
+    }
+
+    return {
+      group: bird,
+      headGroup,
+      leftWing: leftWingGroup,
+      rightWing: rightWingGroup
+    };
+  }
+
+  _buildBirds() {
+    this.birdsGroup = new THREE.Group();
+    this.birds = [];
+
+    // Flock 1: Pier & Coastal Bay Seagulls (6 birds circling pier and beach)
+    const pierFlockConfigs = [
+      { rX: 30, rZ: 38, alt: 11, speed: 0.32, phase: 0.0, flapFreq: 7.5 },
+      { rX: 34, rZ: 44, alt: 14, speed: 0.28, phase: 1.2, flapFreq: 8.0 },
+      { rX: 26, rZ: 32, alt: 9, speed: 0.36, phase: 2.5, flapFreq: 8.5 },
+      { rX: 38, rZ: 48, alt: 16, speed: 0.26, phase: 3.8, flapFreq: 7.2 },
+      { rX: 32, rZ: 36, alt: 12.5, speed: 0.34, phase: 4.6, flapFreq: 8.2 },
+      { rX: 28, rZ: 42, alt: 10.5, speed: 0.30, phase: 5.7, flapFreq: 7.8 }
+    ];
+
+    pierFlockConfigs.forEach((cfg) => {
+      const bObj = this._createLowPolyBird(false);
+      this.birdsGroup.add(bObj.group);
+      this.birds.push({
+        mesh: bObj.group,
+        headGroup: bObj.headGroup,
+        leftWing: bObj.leftWing,
+        rightWing: bObj.rightWing,
+        isPerched: false,
+        centerX: 0,
+        centerZ: -20,
+        radiusX: cfg.rX,
+        radiusZ: cfg.rZ,
+        altitude: cfg.alt,
+        speed: cfg.speed,
+        angle: cfg.phase,
+        wobblePhase: Math.random() * 10,
+        flapFreq: cfg.flapFreq,
+        flapTimer: 0,
+        isGliding: false,
+        glideDuration: 3.5 + Math.random() * 2.0,
+        flapDuration: 2.2 + Math.random() * 1.2
+      });
+    });
+
+    // Flock 2: Clifftop & Lighthouse Soarers (6 birds riding 22m cliff updrafts)
+    const cliffFlockConfigs = [
+      { rX: 42, rZ: 50, alt: 28, speed: 0.24, phase: 0.3, flapFreq: 6.8 },
+      { rX: 46, rZ: 55, alt: 32, speed: 0.22, phase: 1.5, flapFreq: 7.0 },
+      { rX: 38, rZ: 44, alt: 26, speed: 0.27, phase: 2.8, flapFreq: 7.2 },
+      { rX: 50, rZ: 60, alt: 35, speed: 0.20, phase: 3.9, flapFreq: 6.5 },
+      { rX: 44, rZ: 48, alt: 30, speed: 0.25, phase: 4.8, flapFreq: 7.0 },
+      { rX: 40, rZ: 52, alt: 27, speed: 0.26, phase: 5.9, flapFreq: 7.4 }
+    ];
+
+    cliffFlockConfigs.forEach((cfg) => {
+      const bObj = this._createLowPolyBird(false);
+      this.birdsGroup.add(bObj.group);
+      this.birds.push({
+        mesh: bObj.group,
+        headGroup: bObj.headGroup,
+        leftWing: bObj.leftWing,
+        rightWing: bObj.rightWing,
+        isPerched: false,
+        centerX: 52,
+        centerZ: 65,
+        radiusX: cfg.rX,
+        radiusZ: cfg.rZ,
+        altitude: cfg.alt,
+        speed: cfg.speed,
+        angle: cfg.phase,
+        wobblePhase: Math.random() * 10,
+        flapFreq: cfg.flapFreq,
+        flapTimer: 0,
+        isGliding: true,
+        glideDuration: 5.0 + Math.random() * 2.5,
+        flapDuration: 1.8 + Math.random() * 0.8
+      });
+    });
+
+    // Flock 3: Northern Forest & Secret Cove Gliders (5 birds)
+    const forestFlockConfigs = [
+      { rX: 36, rZ: 36, alt: 20, speed: 0.28, phase: 0.6, flapFreq: 7.5 },
+      { rX: 40, rZ: 42, alt: 23, speed: 0.25, phase: 1.9, flapFreq: 7.2 },
+      { rX: 32, rZ: 34, alt: 18, speed: 0.31, phase: 3.1, flapFreq: 8.0 },
+      { rX: 44, rZ: 46, alt: 25, speed: 0.22, phase: 4.4, flapFreq: 7.0 },
+      { rX: 35, rZ: 38, alt: 21, speed: 0.29, phase: 5.5, flapFreq: 7.6 }
+    ];
+
+    forestFlockConfigs.forEach((cfg) => {
+      const bObj = this._createLowPolyBird(false);
+      this.birdsGroup.add(bObj.group);
+      this.birds.push({
+        mesh: bObj.group,
+        headGroup: bObj.headGroup,
+        leftWing: bObj.leftWing,
+        rightWing: bObj.rightWing,
+        isPerched: false,
+        centerX: -20,
+        centerZ: 80,
+        radiusX: cfg.rX,
+        radiusZ: cfg.rZ,
+        altitude: cfg.alt,
+        speed: cfg.speed,
+        angle: cfg.phase,
+        wobblePhase: Math.random() * 10,
+        flapFreq: cfg.flapFreq,
+        flapTimer: 0,
+        isGliding: false,
+        glideDuration: 3.8 + Math.random() * 2.0,
+        flapDuration: 2.4 + Math.random() * 1.0
+      });
+    });
+
+    // Perched Seagulls
+    const perchedConfigs = [
+      { x: 2.15, y: 2.65, z: -43.0, rotY: 2.1 }, // Pier post
+      { x: 0.0, y: 5.75, z: -48.2, rotY: -0.4 }, // Pier Gazebo roof
+      { x: -26.5, y: 4.85, z: -8.0, rotY: 1.2 }, // Western beach rock stack
+      { x: 31.8, y: 22.95, z: 52.0, rotY: -2.3 } // Clifftop lookout railing
+    ];
+
+    perchedConfigs.forEach((cfg) => {
+      const bObj = this._createLowPolyBird(true);
+      bObj.group.position.set(cfg.x, cfg.y, cfg.z);
+      bObj.group.rotation.y = cfg.rotY;
+      this.birdsGroup.add(bObj.group);
+      this.birds.push({
+        mesh: bObj.group,
+        headGroup: bObj.headGroup,
+        isPerched: true,
+        baseRotY: cfg.rotY,
+        baseY: cfg.y,
+        lookTimer: 1.0 + Math.random() * 3.0,
+        targetHeadY: 0,
+        currentHeadY: 0
+      });
+    });
+
+    this.rootGroup.add(this.birdsGroup);
+  }
+
+  _updateBirds(dt) {
+    if (!this.birds || this.birds.length === 0) return;
+
+    for (let i = 0; i < this.birds.length; i++) {
+      const bird = this.birds[i];
+
+      if (bird.isPerched) {
+        // Idle head turning & gentle breathing bob
+        bird.lookTimer -= dt;
+        if (bird.lookTimer <= 0) {
+          bird.lookTimer = 1.5 + Math.random() * 3.5;
+          const angles = [0, -0.65, 0.65, -0.3, 0.4];
+          bird.targetHeadY = angles[Math.floor(Math.random() * angles.length)];
+        }
+        bird.currentHeadY = THREE.MathUtils.lerp(bird.currentHeadY, bird.targetHeadY, dt * 8);
+        bird.headGroup.rotation.y = bird.currentHeadY;
+
+        // Subtle breathing bob
+        bird.mesh.position.y = bird.baseY + Math.sin(this.time * 2.5 + i * 1.5) * 0.012;
+      } else {
+        // Flying bird
+        bird.angle += bird.speed * dt;
+
+        // Organic Lissajous wobble on path
+        const ox = Math.sin(this.time * 0.4 + bird.wobblePhase) * 5.0;
+        const oz = Math.cos(this.time * 0.45 + bird.wobblePhase) * 5.0;
+        const currX = bird.centerX + Math.cos(bird.angle) * bird.radiusX + ox;
+        const currZ = bird.centerZ + Math.sin(bird.angle) * bird.radiusZ + oz;
+
+        // Next forward point along flight path to calculate direction vector
+        const nextAngle = bird.angle + 0.06;
+        const nox = Math.sin((this.time + 0.1) * 0.4 + bird.wobblePhase) * 5.0;
+        const noz = Math.cos((this.time + 0.1) * 0.45 + bird.wobblePhase) * 5.0;
+        const nextX = bird.centerX + Math.cos(nextAngle) * bird.radiusX + nox;
+        const nextZ = bird.centerZ + Math.sin(nextAngle) * bird.radiusZ + noz;
+
+        const dx = nextX - currX;
+        const dz = nextZ - currZ;
+        const heading = Math.atan2(dx, dz);
+
+        // Gentle altitude undulation (riding thermals)
+        const altWave = Math.sin(this.time * 0.5 + bird.wobblePhase) * 2.4;
+        const currY = bird.altitude + altWave;
+
+        bird.mesh.position.set(currX, currY, currZ);
+        bird.mesh.rotation.y = heading;
+
+        // Banking roll into curves
+        const bank = Math.sin(bird.angle) * 0.28;
+        bird.mesh.rotation.z = -bank;
+
+        // Pitch slightly with climb/descent
+        const pitch = Math.cos(this.time * 0.5 + bird.wobblePhase) * 0.08;
+        bird.mesh.rotation.x = -pitch;
+
+        // Gliding vs Flapping cycle
+        bird.flapTimer += dt;
+        const cycleThreshold = bird.isGliding ? bird.glideDuration : bird.flapDuration;
+        if (bird.flapTimer >= cycleThreshold) {
+          bird.isGliding = !bird.isGliding;
+          bird.flapTimer = 0;
+        }
+
+        if (bird.isGliding) {
+          // Outstretched wings with gentle wind flutter
+          const flutter = Math.sin(this.time * 3.5 + bird.wobblePhase) * 0.05;
+          bird.leftWing.rotation.z = THREE.MathUtils.lerp(bird.leftWing.rotation.z, flutter, dt * 6);
+          bird.rightWing.rotation.z = THREE.MathUtils.lerp(bird.rightWing.rotation.z, -flutter, dt * 6);
+          bird.leftWing.rotation.y = THREE.MathUtils.lerp(bird.leftWing.rotation.y, 0, dt * 6);
+          bird.rightWing.rotation.y = THREE.MathUtils.lerp(bird.rightWing.rotation.y, 0, dt * 6);
+        } else {
+          // Flapping wings
+          const flap = Math.sin(this.time * bird.flapFreq + bird.wobblePhase) * 0.58;
+          bird.leftWing.rotation.z = flap;
+          bird.rightWing.rotation.z = -flap;
+          // Sweep wings slightly back during downstroke
+          const sweep = Math.cos(this.time * bird.flapFreq + bird.wobblePhase) * 0.12;
+          bird.leftWing.rotation.y = sweep;
+          bird.rightWing.rotation.y = -sweep;
+
+          // Slight body lift on downstroke
+          bird.mesh.position.y += Math.max(0, flap) * 0.06;
+        }
+      }
+    }
+  }
+
   /**
    * Returns surface elevation beneath point (x, z).
    * If currentY is provided, checks for solid walkable object surfaces (e.g. platforms,
@@ -2338,6 +2691,9 @@ export class World {
         b.mesh.rotation.z = Math.sin(this.time * 1.2 + i * 1.5) * 0.08;
       });
     }
+
+    // Dynamic bird flocks flight, soaring, and perched behaviors
+    this._updateBirds(dt);
   }
 
   destroy() {

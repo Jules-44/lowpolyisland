@@ -49,7 +49,7 @@ export class CameraController {
   update(dt, player, input) {
     if (!player) return;
 
-    // Dynamic FOV adjustment for high-speed Zoom & Quad Nitro Boost & Jumps
+    // Dynamic FOV adjustment for high-speed Zoom & Quad Nitro Boost & Jumps & Gliding
     let targetFov = 62;
     if (player.isDrivingQuad) {
       if (player.quadTurbo) {
@@ -57,6 +57,8 @@ export class CameraController {
       } else if (player.quadSpeed > 10) {
         targetFov = 72;
       }
+    } else if (player.isGliding) {
+      targetFov = 75; // Majestic panoramic flight view
     } else if (player.moveState === 'ZOOM' && player.isMoving) {
       targetFov = 73;
     }
@@ -86,17 +88,18 @@ export class CameraController {
     } else {
       // 3rd Person: Smooth chase camera orbiting behind player
       const targetPos = player.position.clone();
-      targetPos.y += 1.1; // Base torso level
+      targetPos.y += player.isGliding ? 1.4 : 1.1; // Base torso level
 
       const cosPitch = Math.cos(pitch);
       const sinPitch = Math.sin(pitch);
 
       // Positive pitch = tilt view up to sky (camera lowers, look target elevates)
       // Negative pitch = tilt view down to ground (camera elevates, look target lowers)
-      const camElevation = 1.35;
-      const offsetX = Math.sin(yaw) * cosPitch * this.distance;
-      const offsetY = camElevation - sinPitch * this.distance;
-      const offsetZ = Math.cos(yaw) * cosPitch * this.distance;
+      const currentDistance = player.isGliding ? 7.6 : this.distance;
+      const camElevation = player.isGliding ? 2.1 : 1.35;
+      const offsetX = Math.sin(yaw) * cosPitch * currentDistance;
+      const offsetY = camElevation - sinPitch * currentDistance;
+      const offsetZ = Math.cos(yaw) * cosPitch * currentDistance;
 
       const idealCameraPos = new THREE.Vector3(
         targetPos.x + offsetX,

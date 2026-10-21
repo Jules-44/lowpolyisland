@@ -31,6 +31,12 @@ export class Player {
     this.animTime = 0;
     this.isMoving = false;
 
+    // Hang Glider flight properties
+    this.isGliding = false;
+    this.gliderDeployProgress = 0;
+    this.gliderBank = 0;
+    this.gliderPitch = 0;
+
     // Low-poly dust particle pool for Zoom speed
     this.dustParticles = [];
     const dustGeo = new THREE.DodecahedronGeometry(0.12, 0);
@@ -44,6 +50,7 @@ export class Player {
 
     this.mesh = new THREE.Group();
     this._buildFacetedPS1Model();
+    this._buildHangGlider();
     this.mesh.position.copy(this.position);
     this.mesh.rotation.y = this.rotation;
     this.scene.add(this.mesh);
@@ -264,9 +271,215 @@ export class Player {
     this.scene.add(this.shadowMesh);
   }
 
+  _buildHangGlider() {
+    this.gliderGroup = new THREE.Group();
+    this.gliderGroup.position.set(0, 1.82, 0.05);
+    this.gliderGroup.visible = false;
+
+    // Vibrant 90s aerodynamic sailcloth materials
+    const sailYellowMat = new THREE.MeshLambertMaterial({
+      color: 0xfacc15,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+    const sailPinkMat = new THREE.MeshLambertMaterial({
+      color: 0xec4899,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+    const sailTealMat = new THREE.MeshLambertMaterial({
+      color: 0x06b6d4,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+    const frameMat = new THREE.MeshLambertMaterial({
+      color: 0x1e293b,
+      flatShading: true
+    });
+    const barMat = new THREE.MeshLambertMaterial({
+      color: 0x94a3b8,
+      flatShading: true
+    });
+
+    // 1. Aerodynamic Delta Wing Sail Panels (Wingspan: ~4.4m, Sweep: ~48 deg)
+    // Left Wing Main (Yellow)
+    const leftSailGeo = new THREE.BufferGeometry();
+    const leftVertices = new Float32Array([
+      // Inner triangle: Nose -> Left Mid -> Keel Trailing Edge
+      0.0, 0.0, 1.15,
+      -1.2, -0.10, -0.9,
+      0.0, 0.06, -0.8,
+
+      // Outer triangle: Nose -> Left Wingtip -> Left Mid
+      0.0, 0.0, 1.15,
+      -2.2, -0.22, -1.05,
+      -1.2, -0.10, -0.9
+    ]);
+    leftSailGeo.setAttribute('position', new THREE.BufferAttribute(leftVertices, 3));
+    leftSailGeo.computeVertexNormals();
+    const leftSail = new THREE.Mesh(leftSailGeo, sailYellowMat);
+    this.gliderGroup.add(leftSail);
+
+    // Right Wing Main (Yellow)
+    const rightSailGeo = new THREE.BufferGeometry();
+    const rightVertices = new Float32Array([
+      // Inner triangle: Nose -> Keel Trailing Edge -> Right Mid
+      0.0, 0.0, 1.15,
+      0.0, 0.06, -0.8,
+      1.2, -0.10, -0.9,
+
+      // Outer triangle: Nose -> Right Mid -> Right Wingtip
+      0.0, 0.0, 1.15,
+      1.2, -0.10, -0.9,
+      2.2, -0.22, -1.05
+    ]);
+    rightSailGeo.setAttribute('position', new THREE.BufferAttribute(rightVertices, 3));
+    rightSailGeo.computeVertexNormals();
+    const rightSail = new THREE.Mesh(rightSailGeo, sailYellowMat);
+    this.gliderGroup.add(rightSail);
+
+    // 2. Bold Magenta Chevron Racing Panels
+    const leftChevronGeo = new THREE.BufferGeometry();
+    const leftChevVerts = new Float32Array([
+      -0.45, -0.04, 0.35,
+      -1.75, -0.16, -1.0,
+      -1.30, -0.11, -0.95,
+
+      -0.45, -0.04, 0.35,
+      -1.30, -0.11, -0.95,
+      -0.25, -0.02, 0.55
+    ]);
+    leftChevronGeo.setAttribute('position', new THREE.BufferAttribute(leftChevVerts, 3));
+    leftChevronGeo.computeVertexNormals();
+    const leftChevron = new THREE.Mesh(leftChevronGeo, sailPinkMat);
+    leftChevron.position.y += 0.005;
+    this.gliderGroup.add(leftChevron);
+
+    const rightChevronGeo = new THREE.BufferGeometry();
+    const rightChevVerts = new Float32Array([
+      0.45, -0.04, 0.35,
+      1.30, -0.11, -0.95,
+      1.75, -0.16, -1.0,
+
+      0.45, -0.04, 0.35,
+      0.25, -0.02, 0.55,
+      1.30, -0.11, -0.95
+    ]);
+    rightChevronGeo.setAttribute('position', new THREE.BufferAttribute(rightChevVerts, 3));
+    rightChevronGeo.computeVertexNormals();
+    const rightChevron = new THREE.Mesh(rightChevronGeo, sailPinkMat);
+    rightChevron.position.y += 0.005;
+    this.gliderGroup.add(rightChevron);
+
+    // 3. Electric Cyan Wingtips
+    const leftTipGeo = new THREE.BufferGeometry();
+    const leftTipVerts = new Float32Array([
+      -1.75, -0.16, -0.65,
+      -2.2, -0.22, -1.05,
+      -1.85, -0.17, -1.02
+    ]);
+    leftTipGeo.setAttribute('position', new THREE.BufferAttribute(leftTipVerts, 3));
+    leftTipGeo.computeVertexNormals();
+    const leftTip = new THREE.Mesh(leftTipGeo, sailTealMat);
+    leftTip.position.y += 0.006;
+    this.gliderGroup.add(leftTip);
+
+    const rightTipGeo = new THREE.BufferGeometry();
+    const rightTipVerts = new Float32Array([
+      1.75, -0.16, -0.65,
+      1.85, -0.17, -1.02,
+      2.2, -0.22, -1.05
+    ]);
+    rightTipGeo.setAttribute('position', new THREE.BufferAttribute(rightTipVerts, 3));
+    rightTipGeo.computeVertexNormals();
+    const rightTip = new THREE.Mesh(rightTipGeo, sailTealMat);
+    rightTip.position.y += 0.006;
+    this.gliderGroup.add(rightTip);
+
+    // 4. Matte Aluminum Tubular Frame
+    // Central Keel
+    const keelGeo = new THREE.CylinderGeometry(0.028, 0.028, 2.05, 5);
+    keelGeo.rotateX(Math.PI / 2);
+    const keel = new THREE.Mesh(keelGeo, frameMat);
+    keel.position.set(0, 0.02, 0.12);
+    this.gliderGroup.add(keel);
+
+    // Left Leading Edge Tube
+    const leftEdgeGeo = new THREE.CylinderGeometry(0.028, 0.028, 2.7, 5);
+    const leftEdge = new THREE.Mesh(leftEdgeGeo, frameMat);
+    leftEdge.position.set(-1.08, -0.10, 0.02);
+    leftEdge.rotation.y = -0.58;
+    leftEdge.rotation.z = 0.09;
+    leftEdge.rotation.x = Math.PI / 2;
+    this.gliderGroup.add(leftEdge);
+
+    // Right Leading Edge Tube
+    const rightEdgeGeo = new THREE.CylinderGeometry(0.028, 0.028, 2.7, 5);
+    const rightEdge = new THREE.Mesh(rightEdgeGeo, frameMat);
+    rightEdge.position.set(1.08, -0.10, 0.02);
+    rightEdge.rotation.y = 0.58;
+    rightEdge.rotation.z = -0.09;
+    rightEdge.rotation.x = Math.PI / 2;
+    this.gliderGroup.add(rightEdge);
+
+    // Crossbar
+    const crossbarGeo = new THREE.CylinderGeometry(0.024, 0.024, 2.15, 5);
+    crossbarGeo.rotateZ(Math.PI / 2);
+    const crossbar = new THREE.Mesh(crossbarGeo, frameMat);
+    crossbar.position.set(0, -0.07, -0.2);
+    this.gliderGroup.add(crossbar);
+
+    // Kingpost vertical mast
+    const kingpostGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.45, 4);
+    const kingpost = new THREE.Mesh(kingpostGeo, frameMat);
+    kingpost.position.set(0, 0.24, 0.0);
+    this.gliderGroup.add(kingpost);
+
+    // 5. Control Bar (A-Frame) where player holds
+    const aFrameGroup = new THREE.Group();
+    // Left Down-tube
+    const leftDownGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.60, 4);
+    const leftDown = new THREE.Mesh(leftDownGeo, frameMat);
+    leftDown.position.set(-0.16, -0.28, 0.05);
+    leftDown.rotation.z = 0.32;
+    aFrameGroup.add(leftDown);
+
+    // Right Down-tube
+    const rightDownGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.60, 4);
+    const rightDown = new THREE.Mesh(rightDownGeo, frameMat);
+    rightDown.position.set(0.16, -0.28, 0.05);
+    rightDown.rotation.z = -0.32;
+    aFrameGroup.add(rightDown);
+
+    // Horizontal Base Control Bar (the grip bar!)
+    const gripGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.68, 5);
+    gripGeo.rotateZ(Math.PI / 2);
+    const gripBar = new THREE.Mesh(gripGeo, barMat);
+    gripBar.position.set(0, -0.55, 0.06);
+    aFrameGroup.add(gripBar);
+
+    this.gliderGroup.add(aFrameGroup);
+
+    // 6. Dynamic Wingtip Ribbon Streamers
+    const ribbonGeo = new THREE.BoxGeometry(0.04, 0.01, 0.45);
+    const ribbonMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+
+    this.leftStreamer = new THREE.Mesh(ribbonGeo, ribbonMat);
+    this.leftStreamer.position.set(-2.2, -0.22, -1.25);
+    this.gliderGroup.add(this.leftStreamer);
+
+    this.rightStreamer = new THREE.Mesh(ribbonGeo, ribbonMat);
+    this.rightStreamer.position.set(2.2, -0.22, -1.25);
+    this.gliderGroup.add(this.rightStreamer);
+
+    this.mesh.add(this.gliderGroup);
+  }
+
   update(dt, input, cameraYaw, world) {
     if (this.isDrivingQuad) {
       // While driving Quad Bike, transforms & seated posture are driven by QuadBike
+      this.isGliding = false;
+      if (this.gliderGroup) this.gliderGroup.visible = false;
       this.mesh.position.copy(this.position);
       this.mesh.rotation.y = this.rotation;
       if (this.shadowMesh) {
@@ -274,6 +487,154 @@ export class Player {
       }
       return;
     }
+
+    // Surface elevation query to calculate height above ground
+    const currentGroundY = world ? world.getGroundHeight(this.position.x, this.position.z, this.position.y) : 0;
+    const heightAboveGround = this.position.y - currentGroundY;
+
+    // Check hang glider auto-deployment condition:
+    // If airborne and falling (e.g. jumped off cliff or walked off ledge with height > 1.6m)
+    // Or if airborne and pressing Jump in midair
+    if (!this.isGrounded && !this.isDrivingQuad) {
+      if ((this.velocity.y < -0.3 && heightAboveGround > 1.6) || (input.isJump() && heightAboveGround > 1.2)) {
+        this.isGliding = true;
+      }
+    }
+
+    // ==========================================
+    // 1. HANG GLIDER FLIGHT MODE
+    // ==========================================
+    if (this.isGliding) {
+      this.moveState = 'GLIDE';
+      this.gliderDeployProgress = Math.min(1.0, this.gliderDeployProgress + dt * 6.0);
+      this.gliderGroup.visible = true;
+      this.gliderGroup.scale.set(this.gliderDeployProgress, this.gliderDeployProgress, this.gliderDeployProgress);
+
+      // Steering with A / D or Arrow Keys
+      let turnRate = 0;
+      if (input.isLeft()) turnRate -= 1.8;
+      if (input.isRight()) turnRate += 1.8;
+      this.rotation += turnRate * dt;
+
+      // Banking roll into curves
+      const targetBank = input.isLeft() ? -0.42 : (input.isRight() ? 0.42 : 0);
+      this.gliderBank += (targetBank - this.gliderBank) * Math.min(1.0, dt * 5.0);
+
+      // Pitch & Glide Speed:
+      // Forward dives down faster for extra speed; Backward flares up to slow down
+      let targetPitch = 0;
+      let glideSpeed = 12.5; // m/s
+      let targetDescent = -2.0; // gentle slow descent m/s
+
+      if (input.isForward()) {
+        targetPitch = 0.22;
+        glideSpeed = 16.5;
+        targetDescent = -2.8;
+      } else if (input.isBackward()) {
+        targetPitch = -0.16;
+        glideSpeed = 7.5;
+        targetDescent = -1.2;
+      }
+
+      // Coastal Ridge Lift / Thermal updrafts along Eastern Sea Cliffs (x: 18 to 85, z: 15 to 115)
+      if (this.position.x > 18 && this.position.x < 85 && this.position.z > 15 && this.position.z < 115 && this.position.y > 8) {
+        // Marine sea breeze thermal updraft pushes glider upward
+        targetDescent += 1.7; // Net descent -0.3 to +0.5 m/s (thermal soaring!)
+      }
+
+      this.gliderPitch += (targetPitch - this.gliderPitch) * Math.min(1.0, dt * 4.5);
+
+      // Forward flight velocity vector
+      this.velocity.x = Math.sin(this.rotation) * glideSpeed;
+      this.velocity.z = Math.cos(this.rotation) * glideSpeed;
+
+      // Smooth vertical descent
+      this.velocity.y += (targetDescent - this.velocity.y) * Math.min(1.0, dt * 5.0);
+
+      // Apply displacement
+      this.position.x += this.velocity.x * dt;
+      this.position.z += this.velocity.z * dt;
+      this.position.y += this.velocity.y * dt;
+
+      // Resolve obstacle collisions in flight
+      if (world && world.resolveCollisions) {
+        world.resolveCollisions(this.position, this.radius, this.position.y);
+      }
+
+      // Check touchdown landing
+      const landingHeight = world ? world.getGroundHeight(this.position.x, this.position.z, this.position.y) : 0;
+      if (this.position.y <= landingHeight) {
+        // Touchdown landing!
+        this.position.y = landingHeight;
+        this.velocity.set(0, 0, 0);
+        this.isGrounded = true;
+        this.isGliding = false;
+        this.gliderDeployProgress = 0;
+        this.gliderGroup.visible = false;
+        this.gliderBank = 0;
+        this.gliderPitch = 0;
+
+        // Reset upright posture
+        this.mesh.rotation.z = 0;
+        this.mesh.rotation.x = 0;
+        this.torso.rotation.x = 0;
+        this.head.rotation.x = 0;
+        this.leftArmPivot.position.set(-0.36, 1.42, 0);
+        this.rightArmPivot.position.set(0.36, 1.42, 0);
+        this.leftArmPivot.rotation.set(0, 0, 0);
+        this.rightArmPivot.rotation.set(0, 0, 0);
+        this.leftLegPivot.rotation.set(0, 0, 0);
+        this.rightLegPivot.rotation.set(0, 0, 0);
+      } else {
+        // Prone hang-gliding flight harness posture
+        this.isGrounded = false;
+        this.torso.rotation.x = -1.1 * this.gliderDeployProgress;
+        this.head.rotation.x = 0.65 * this.gliderDeployProgress;
+        this.leftArmPivot.position.set(-0.30, 1.48, 0.08);
+        this.leftArmPivot.rotation.x = -1.25 * this.gliderDeployProgress;
+        this.rightArmPivot.position.set(0.30, 1.48, 0.08);
+        this.rightArmPivot.rotation.x = -1.25 * this.gliderDeployProgress;
+        this.leftLegPivot.rotation.x = 0.22 * this.gliderDeployProgress;
+        this.rightLegPivot.rotation.x = 0.22 * this.gliderDeployProgress;
+
+        this.mesh.position.copy(this.position);
+        this.mesh.rotation.y = this.rotation;
+        this.mesh.rotation.z = -this.gliderBank;
+        this.mesh.rotation.x = this.gliderPitch;
+
+        // Animate wingtip streamers in the air current
+        this.animTime += dt;
+        if (this.leftStreamer && this.rightStreamer) {
+          const flutter = Math.sin(this.animTime * 22) * 0.12;
+          this.leftStreamer.rotation.x = flutter;
+          this.rightStreamer.rotation.x = -flutter;
+        }
+      }
+
+      // Update ground shadow during flight
+      if (this.shadowMesh) {
+        const height = Math.max(0, this.position.y - landingHeight);
+        this.shadowMesh.position.set(this.position.x, landingHeight + 0.035, this.position.z);
+        const scale = Math.max(0.25, 1.2 - height * 0.04);
+        this.shadowMesh.scale.set(scale, scale, scale);
+        if (this.shadowMat) {
+          this.shadowMat.opacity = Math.max(0.08, 0.45 - height * 0.02);
+        }
+      }
+
+      return; // Gliding update complete
+    }
+
+    // ==========================================
+    // 2. STANDARD GROUND / JUMPING MODE
+    // ==========================================
+    this.gliderGroup.visible = false;
+    this.mesh.rotation.z = 0;
+    this.mesh.rotation.x = 0;
+    this.torso.rotation.x = 0;
+    this.head.rotation.x = 0;
+    this.leftArmPivot.position.set(-0.36, 1.42, 0);
+    this.rightArmPivot.position.set(0.36, 1.42, 0);
 
     const moveDir = new THREE.Vector3();
 
