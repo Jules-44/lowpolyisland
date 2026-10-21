@@ -633,7 +633,7 @@ canvas {
 
 .level-select-card {
   width: 100%;
-  max-width: 1040px;
+  max-width: 900px;
   background: rgba(14, 18, 32, 0.94);
   border: 2px solid rgba(77, 238, 234, 0.6);
   box-shadow: 0 0 35px rgba(77, 238, 234, 0.25), inset 0 0 20px rgba(77, 238, 234, 0.08);
@@ -653,7 +653,7 @@ canvas {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), #58b2dc, var(--neon-amber));
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-amber));
 }
 
 .modal-header {
@@ -702,11 +702,11 @@ canvas {
 /* Level Cards Grid */
 .level-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 760px) {
   .level-cards-grid {
     grid-template-columns: 1fr;
   }
@@ -734,11 +734,6 @@ canvas {
   box-shadow: 0 0 24px rgba(255, 65, 145, 0.4);
 }
 
-.level-card.fjord-card:hover {
-  border-color: #58b2dc;
-  box-shadow: 0 0 24px rgba(88, 178, 220, 0.45);
-}
-
 /* Preview Header */
 .level-preview {
   height: 120px;
@@ -757,11 +752,6 @@ canvas {
 .cyber-preview {
   background: linear-gradient(135deg, #09071c 0%, #1e1240 50%, #00f0ff 160%);
   border-bottom: 2px solid var(--neon-pink);
-}
-
-.fjord-preview {
-  background: linear-gradient(135deg, #0e1e28 0%, #1a3848 50%, #d87d46 120%);
-  border-bottom: 2px solid #58b2dc;
 }
 
 .preview-badge {
@@ -901,41 +891,6 @@ canvas {
   box-shadow: 0 0 20px rgba(255, 65, 145, 0.8);
 }
 
-.level-launch-btn.fjord-launch-btn {
-  background: rgba(88, 178, 220, 0.15);
-  border-color: #58b2dc;
-  color: #8be9fd;
-}
-
-.level-launch-btn.fjord-launch-btn:hover {
-  background: #58b2dc;
-  color: #07141f;
-  box-shadow: 0 0 20px rgba(88, 178, 220, 0.85);
-}
-
-.preview-badge.fjord-badge {
-  border-color: #58b2dc;
-  color: #8be9fd;
-}
-
-.preview-tag-corner.fjord-corner {
-  color: #ffbb6b;
-}
-
-.level-code.fjord-code {
-  color: #58b2dc;
-}
-
-.level-name.fjord-title {
-  text-shadow: 0 0 10px rgba(88, 178, 220, 0.5);
-}
-
-.spec-pill.fjord-pill {
-  border-color: rgba(88, 178, 220, 0.45);
-  color: #8be9fd;
-}
-
-/* Modal Footer */
 .modal-footer {
   border-top: 1px solid rgba(80, 110, 160, 0.3);
   padding-top: 14px;

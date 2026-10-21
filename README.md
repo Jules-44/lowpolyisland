@@ -15,10 +15,9 @@ An atmospheric late-90s / early-2000s low-poly 3D adventure game paired with rol
 - **Multi-World Exploration (`L` to Level Select):**
   - **Level 1: Coastal Haven** — Boardwalk pier, beach bar, swaying palm trees, glowing lighthouse, animated ocean waves, and mountain foothills.
   - **Level 2: Neon Metropolis** — Massive 840m × 840m cyberpunk city grid with 7 avenues, illuminated storefront lobbies, neon blade signs, streetlamps, and a 64m-wide elevated Skyway with 7 on/off ramps.
-  - **Level 3: Nordic Fjords** — Towering granite peaks, red stilt fishing cottages (Rorbu) over timber pilings, high arched trestle bridge crossing the sound, alpine switchback trails, and a mountain summit Stave Lookout beacon.
 - **Quad Bike 4x4 Off-Road Vehicle (`E` to Mount/Dismount):**
   - Snappy low-speed steering for 90° city street corners and tight alleys.
-  - Smooth high-speed drift physics on highways and timber bridges.
+  - Smooth high-speed drift physics on highways.
   - Stunt launch jumps (`Space`) and suspension pitch/roll terrain tracking.
   - Twin nitro afterburner exhaust flames strictly active during boost (`Shift + W > 14 m/s`).
 - **Retro Walkman Audio System:**
@@ -31,7 +30,7 @@ An atmospheric late-90s / early-2000s low-poly 3D adventure game paired with rol
   - Zero-click two-finger trackpad camera orbit + optional Pointer Lock mode.
 - **Retro Graphics & Atmosphere (`T` to Cycle Skies):**
   - Toggle between authentic PS1 pixelation shader and crisp HD mode.
-  - 7 dynamic sky palettes: Golden Hour, Crimson Coral, Tropical Mango, Pastel Peach, Afternoon Gold, Cyber Midnight, and Nordic Twilight.
+  - 6 dynamic sky palettes: Golden Hour, Crimson Coral, Tropical Mango, Pastel Peach, Afternoon Gold, and Cyber Midnight.
 
 ---
 
