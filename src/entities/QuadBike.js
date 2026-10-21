@@ -36,7 +36,7 @@ export class QuadBike {
     this.turboAccel = 72.0; // Rocket-like instant torque!
     this.brakeRate = 36.0;
     this.friction = 4.8;
-    this.turnSpeed = 2.6;
+    this.turnSpeed = 2.8;
 
     // Ballistic Jump & Airborne physics
     this.velocityY = 0;
@@ -349,6 +349,11 @@ export class QuadBike {
     player.quadTurbo = false;
     player.quadSpeed = 0;
 
+    // Immediately hide nitro flames when dismounting
+    if (this.nitroFlames) {
+      this.nitroFlames.forEach((f) => (f.visible = false));
+    }
+
     // Place player safely to the left of the quad bike
     const cosH = Math.cos(this.heading);
     const sinH = Math.sin(this.heading);
@@ -363,22 +368,23 @@ export class QuadBike {
   update(dt, input, world, player) {
     // 1. When ridden by player
     if (this.isRidden) {
-      const isShift = input.keys['ShiftLeft'] || input.keys['ShiftRight'];
-      this.isTurbo = isShift;
+      const isShift = !!(input.keys['ShiftLeft'] || input.keys['ShiftRight']);
+      const isFwd = !!(input.keys['KeyW'] || input.keys['ArrowUp']);
+      const isBwd = !!(input.keys['KeyS'] || input.keys['ArrowDown']);
+      const isLeft = !!(input.keys['KeyA'] || input.keys['ArrowLeft']);
+      const isRight = !!(input.keys['KeyD'] || input.keys['ArrowRight']);
+      const isHandbrake = !!input.keys['Space'];
+
+      // Boosting is only active when player holds Shift + forward throttle and speed exceeds cruising threshold
+      const isBoosting = isShift && isFwd && this.speed > 14.0;
+      this.isTurbo = isBoosting;
       if (player) {
-        player.quadTurbo = isShift;
+        player.quadTurbo = isBoosting;
         player.quadSpeed = Math.abs(this.speed);
       }
 
       const topSpeed = isShift ? this.turboSpeed : this.maxSpeed;
       const currentAccel = isShift ? this.turboAccel : this.accel;
-
-      // Throttle & Brake controls
-      const isFwd = input.keys['KeyW'] || input.keys['ArrowUp'];
-      const isBwd = input.keys['KeyS'] || input.keys['ArrowDown'];
-      const isLeft = input.keys['KeyA'] || input.keys['ArrowLeft'];
-      const isRight = input.keys['KeyD'] || input.keys['ArrowRight'];
-      const isHandbrake = input.keys['Space'];
 
       // Forward & reverse acceleration
       if (isFwd) {
@@ -400,17 +406,26 @@ export class QuadBike {
         }
       }
 
-      // Steering
+      // Steering: High authority lock & quick handlebar response
       let targetSteer = 0;
-      if (isLeft) targetSteer += 0.55;
-      if (isRight) targetSteer -= 0.55;
+      if (isLeft) targetSteer += 0.70;
+      if (isRight) targetSteer -= 0.70;
 
-      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1.0, dt * 10);
+      this.steerAngle += (targetSteer - this.steerAngle) * Math.min(1.0, dt * 14);
 
-      // Turn heading when moving
-      if (Math.abs(this.speed) > 0.2) {
-        const dirSign = this.speed > 0 ? 1 : -1;
-        this.heading += this.steerAngle * this.turnSpeed * (Math.abs(this.speed) / this.maxSpeed) * dirSign * dt;
+      // Turn heading: responsive at low speeds, stable at high speeds
+      const absSpeed = Math.abs(this.speed);
+      if (absSpeed > 0.08 || ((isFwd || isBwd) && (isLeft || isRight))) {
+        const dirSign = this.speed >= 0 ? (isBwd && absSpeed < 0.4 ? -1 : 1) : -1;
+        // Dynamic steering responsiveness curve:
+        // High turning authority at low speed (1.45x) for tight street corners and parking maneuvers
+        // Controlled drift authority at high speed (0.65x) to maintain stable tracking on avenues/highways
+        const speedRatio = Math.min(1.0, absSpeed / this.maxSpeed);
+        const steerAuthority = 1.45 - speedRatio * 0.75;
+        // Direct responsiveness even when starting from a stop or crawling
+        const motionEngagement = Math.min(1.0, Math.max(0.72, absSpeed / 2.0));
+        
+        this.heading += this.steerAngle * this.turnSpeed * steerAuthority * motionEngagement * dirSign * dt;
       }
 
       // 2. Horizontal position updates
@@ -418,8 +433,8 @@ export class QuadBike {
       this.position.x -= Math.sin(this.heading) * moveDist;
       this.position.z -= Math.cos(this.heading) * moveDist;
 
-      // Prevent driving into deep ocean (stay above water level y=0.35)
-      if (world) {
+      // Prevent driving into deep ocean (stay above water level y=0.35 on island)
+      if (world && world.id !== 'cybercity' && world.hasOcean !== false) {
         const elev = world.getIslandElevation(this.position.x, this.position.z);
         if (elev < 0.35) {
           this.speed *= 0.5;
@@ -537,34 +552,39 @@ export class QuadBike {
         }
       }
 
-      // 8. Animate Nitro Exhaust Flames
+      // 8. Animate Nitro Exhaust Flames - strictly visible ONLY when actively boosting!
       if (this.nitroFlames && this.nitroFlames.length > 0) {
-        const showFlames = isShift && this.speed > 5.0;
+        const showFlames = isBoosting && this.isRidden;
         this.nitroFlames.forEach((flame) => {
           flame.visible = showFlames;
           if (showFlames) {
             const flicker = 0.85 + Math.random() * 0.4;
-            const stretch = 1.0 + (this.speed / this.turboSpeed) * 0.6 + Math.random() * 0.3;
+            const stretch = 1.0 + (this.speed / this.turboSpeed) * 0.7 + Math.random() * 0.35;
             flame.scale.set(flicker, flicker, stretch);
           }
         });
       }
 
-      // 9. Sync player position & seated riding stance
+      // 9. Sync player position & seated riding stance (facing forward toward handlebars)
       if (player) {
-        player.position.set(this.position.x, this.position.y + 0.22, this.position.z);
-        player.rotation = this.heading;
+        const sinH = Math.sin(this.heading);
+        const cosH = Math.cos(this.heading);
+        // Seat offset in local coordinates: z = +0.18 (towards rear saddle)
+        const seatX = this.position.x + sinH * 0.18;
+        const seatZ = this.position.z + cosH * 0.18;
+        player.position.set(seatX, this.position.y + 0.32, seatZ);
+        player.rotation = this.heading + Math.PI; // Face forward toward front handlebars!
         player.velocity.set(0, 0, 0);
         player.isGrounded = this.isGrounded;
 
-        // Seated driving pose
+        // Seated driving pose (arms reaching forward to handlebars, legs forward on footrests)
         if (player.leftLegPivot && player.rightLegPivot) {
-          player.leftLegPivot.rotation.x = -1.1; // Seated bent legs
-          player.rightLegPivot.rotation.x = -1.1;
+          player.leftLegPivot.rotation.x = 1.1;
+          player.rightLegPivot.rotation.x = 1.1;
         }
         if (player.leftArmPivot && player.rightArmPivot) {
-          player.leftArmPivot.rotation.x = -0.75; // Holding handlebars forward
-          player.rightArmPivot.rotation.x = -0.75;
+          player.leftArmPivot.rotation.x = 0.8;
+          player.rightArmPivot.rotation.x = 0.8;
         }
       }
     } else {

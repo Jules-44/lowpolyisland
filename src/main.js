@@ -6,6 +6,7 @@ import { Player } from './entities/Player.js';
 import { CameraController } from './entities/CameraController.js';
 import { QuadBike } from './entities/QuadBike.js';
 import { World } from './world/World.js';
+import { CyberCityWorld } from './world/CyberCityWorld.js';
 
 class GameApp {
   constructor() {
@@ -16,7 +17,10 @@ class GameApp {
     this.inputManager = new InputManager(this.container);
     this.audioEngine = new AudioEngine();
 
-    // 2. World & Entities
+    // 2. Active World & Entities
+    this.currentWorldId = 'island';
+    this.isLoading = false;
+
     this.world = new World(this.sceneManager.scene);
     this.player = new Player(this.sceneManager.scene);
     this.cameraController = new CameraController(this.sceneManager.camera);
@@ -38,6 +42,21 @@ class GameApp {
     this.actionPrompt = document.getElementById('action-prompt');
     this.actionText = document.getElementById('action-text');
 
+    // Level Select & Loading Screen UI
+    this.levelSelectBtn = document.getElementById('level-select-btn');
+    this.levelModal = document.getElementById('level-select-modal');
+    this.levelCloseBtn = document.getElementById('level-close-btn');
+    this.launchIslandBtn = document.getElementById('launch-island-btn');
+    this.launchCyberBtn = document.getElementById('launch-cyber-btn');
+    this.cardIsland = document.getElementById('card-level-island');
+    this.cardCyber = document.getElementById('card-level-cyber');
+
+    this.loadingModal = document.getElementById('loading-screen-modal');
+    this.loadingBarFill = document.getElementById('loading-bar-fill');
+    this.loadingStatusText = document.getElementById('loading-status-text');
+    this.loadingPercentText = document.getElementById('loading-percent-text');
+    this.loadingTargetText = document.getElementById('loading-target-text');
+
     // Walkman UI
     this.btnPlay = document.getElementById('btn-play');
     this.btnNext = document.getElementById('btn-next');
@@ -56,10 +75,216 @@ class GameApp {
 
     this._setupUI();
     this._setupControls();
+    this._setupLevelSelect();
 
     // Start loop
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
+  }
+
+  _setupLevelSelect() {
+    // Open modal via Top Bar Button
+    if (this.levelSelectBtn) {
+      this.levelSelectBtn.addEventListener('click', () => {
+        this.openLevelSelect();
+      });
+    }
+
+    // Close modal via Close Button
+    if (this.levelCloseBtn) {
+      this.levelCloseBtn.addEventListener('click', () => {
+        this.closeLevelSelect();
+      });
+    }
+
+    // Launch Level 1 (Coastal Haven)
+    if (this.launchIslandBtn) {
+      this.launchIslandBtn.addEventListener('click', () => {
+        this.loadLevel('island');
+      });
+    }
+    if (this.cardIsland) {
+      this.cardIsland.addEventListener('click', (e) => {
+        if (e.target !== this.launchIslandBtn && !this.launchIslandBtn.contains(e.target)) {
+          this.loadLevel('island');
+        }
+      });
+    }
+
+    // Launch Level 2 (Neon Metropolis)
+    if (this.launchCyberBtn) {
+      this.launchCyberBtn.addEventListener('click', () => {
+        this.loadLevel('cybercity');
+      });
+    }
+    if (this.cardCyber) {
+      this.cardCyber.addEventListener('click', (e) => {
+        if (e.target !== this.launchCyberBtn && !this.launchCyberBtn.contains(e.target)) {
+          this.loadLevel('cybercity');
+        }
+      });
+    }
+
+    // Keyboard Shortcuts: 'L' toggles, '1' loads Island, '2' loads CyberCity, 'ESC' closes
+    this.inputManager.onLevelSelect = () => {
+      this.toggleLevelSelect();
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape' && !this.levelModal.classList.contains('hidden')) {
+        this.closeLevelSelect();
+      }
+      if (e.code === 'Digit1' && !this.isLoading) {
+        this.loadLevel('island');
+      }
+      if (e.code === 'Digit2' && !this.isLoading) {
+        this.loadLevel('cybercity');
+      }
+    });
+  }
+
+  openLevelSelect() {
+    if (this.inputManager.mouse.isPointerLocked) {
+      this.inputManager.exitPointerLock();
+    }
+    this.levelModal.classList.remove('hidden');
+  }
+
+  closeLevelSelect() {
+    this.levelModal.classList.add('hidden');
+  }
+
+  toggleLevelSelect() {
+    if (this.levelModal.classList.contains('hidden')) {
+      this.openLevelSelect();
+    } else {
+      this.closeLevelSelect();
+    }
+  }
+
+  /**
+   * Load and initialize a new level with a retro BIOS loading sequence
+   */
+  loadLevel(levelId) {
+    if (this.isLoading) return;
+    if (this.currentWorldId === levelId && this.world) {
+      this.closeLevelSelect();
+      this._showToast(`ALREADY EXPLORING ${this.world.name}`);
+      return;
+    }
+
+    this.isLoading = true;
+    this.closeLevelSelect();
+
+    // Show loading modal
+    this.loadingModal.classList.remove('hidden');
+    const levelName = levelId === 'island' ? 'COASTAL HAVEN // SUNSET ATOLL' : 'NEON METROPOLIS // HIGHWAY GRID';
+    this.loadingTargetText.textContent = `BUILDING SECTOR: ${levelName}...`;
+    this.loadingBarFill.style.width = '0%';
+    this.loadingPercentText.textContent = '0%';
+
+    const steps = [
+      { pct: 20, text: 'INITIALIZING LOW-POLY GEOMETRIES...' },
+      { pct: 50, text: 'CALIBRATING KINEMATIC RIGIDBODIES...' },
+      { pct: 80, text: 'SYNTHESIZING ATMOSPHERIC BREAKBEAT BUS...' },
+      { pct: 100, text: 'SECTOR ONLINE — ENTERING MATRIX' }
+    ];
+
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      if (stepIdx < steps.length) {
+        const s = steps[stepIdx];
+        this.loadingBarFill.style.width = `${s.pct}%`;
+        this.loadingPercentText.textContent = `${s.pct}%`;
+        this.loadingStatusText.textContent = s.text;
+        stepIdx++;
+      } else {
+        clearInterval(interval);
+        this._executeWorldSwitch(levelId);
+      }
+    }, 200);
+  }
+
+  _executeWorldSwitch(levelId) {
+    try {
+      // 1. Dismount quad bike if currently ridden
+      if (this.quadBike && this.quadBike.isRidden) {
+        this.quadBike.dismount(this.player, this.world);
+      }
+
+      // 2. Teardown existing world
+      if (this.world && typeof this.world.destroy === 'function') {
+        this.world.destroy();
+      }
+
+      this.currentWorldId = levelId;
+
+      // 3. Build new world & configure level
+      let targetTheme = 'GOLDEN_HOUR';
+      let trackIndex = 0;
+
+      if (levelId === 'island') {
+        this.world = new World(this.sceneManager.scene);
+        targetTheme = 'GOLDEN_HOUR';
+        trackIndex = 0;
+
+        // Spawn player on pier
+        this.player.position.set(0, 2.38, -8);
+        this.player.rotation = Math.PI;
+        this.player.velocity.set(0, 0, 0);
+
+        // Spawn Quad Bike in foothills
+        this.quadBike.position.set(-36, 4.2, 46);
+        this.quadBike.heading = 0;
+        this.quadBike.speed = 0;
+        this.quadBike.velocityY = 0;
+      } else if (levelId === 'cybercity') {
+        this.world = new CyberCityWorld(this.sceneManager.scene);
+        targetTheme = 'CYBER_MIDNIGHT';
+        trackIndex = 3; // CYBER ROOFTOPS (TECHSTEP VIP)
+
+        // Spawn player on main boulevard sidewalk
+        this.player.position.set(0, 0.22, 6);
+        this.player.rotation = 0;
+        this.player.velocity.set(0, 0, 0);
+
+        // Spawn Quad Bike in avenue curb lane
+        this.quadBike.position.set(4.5, 0.2, 4);
+        this.quadBike.heading = 0;
+        this.quadBike.speed = 0;
+        this.quadBike.velocityY = 0;
+      }
+
+      // 4. Apply sky atmosphere
+      this.sceneManager.applySkyTheme(targetTheme);
+      const sunsetBtns = document.querySelectorAll('.sunset-opt-btn');
+      sunsetBtns.forEach((b) => {
+        if (b.dataset.theme === targetTheme) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
+      // 5. Update audio track to fit sector
+      const track = this.audioEngine.setTrack(trackIndex);
+      this.trackTitle.textContent = track.title;
+      this.trackArtist.textContent = track.artist;
+
+      // Reset camera controller
+      if (this.cameraController && typeof this.cameraController.reset === 'function') {
+        this.cameraController.reset();
+      }
+    } catch (err) {
+      console.error('Error switching worlds:', err);
+    } finally {
+      // 6. Complete loading screen fadeout
+      setTimeout(() => {
+        this.loadingModal.classList.add('hidden');
+        this.isLoading = false;
+        this._showToast(levelId === 'island' ? '🌴 ENTERED COASTAL HAVEN // SUNSET ATOLL' : '🌆 ENTERED NEON METROPOLIS // HIGHWAY GRID');
+      }, 350);
+    }
   }
 
   _setupControls() {
@@ -125,11 +350,13 @@ class GameApp {
       this.retroResBtn.addEventListener('click', () => {
         const isPixel = this.sceneManager.toggleRetroPixelMode();
         if (isPixel) {
-          this.retroResBtn.textContent = 'PS1 PIXELS: ON';
+          this.retroResBtn.textContent = 'PS1 GRAPHICS: ON';
           this.retroResBtn.classList.remove('alt-mode');
+          this._showToast("🕹️ PS1 PIXELS: ON // LOW-RES RETRO MODE");
         } else {
-          this.retroResBtn.textContent = 'HD MODE: ON';
+          this.retroResBtn.textContent = 'PS1 GRAPHICS: OFF';
           this.retroResBtn.classList.add('alt-mode');
+          this._showToast("✨ HD CRISP GRAPHICS: ON // NATIVE RESOLUTION");
         }
       });
     }
@@ -181,6 +408,66 @@ class GameApp {
         return;
       }
 
+      // ----------------------------------------------------
+      // Sector 2: Neon Metropolis Specific Interactions
+      // ----------------------------------------------------
+      if (this.currentWorldId === 'cybercity') {
+        // Neo Ramen Bar at (24, 0.22, 16)
+        if (p.distanceTo(new THREE.Vector3(24, 0.22, 16)) < 6.5) {
+          this._showToast("🍜 ORDERED SPICY TOKYO RAMEN // ENERGY BOOST +10");
+          return;
+        }
+
+        // Cyber Arcade at (24, 0.22, 42)
+        if (p.distanceTo(new THREE.Vector3(24, 0.22, 42)) < 6.5) {
+          this._showToast("🕹️ INSERTED 100 YEN // PLAYING 1999 VIRTUAL RACER!");
+          return;
+        }
+
+        // Synthwave Cafe at (-24, 0.22, 16)
+        if (p.distanceTo(new THREE.Vector3(-24, 0.22, 16)) < 6.5) {
+          this._showToast("☕ ENJOYING SYNTHWAVE ICED LATTE // CHILL VIBES");
+          return;
+        }
+
+        // 160 BPM Record Shop at (-24, 0.22, 42)
+        if (p.distanceTo(new THREE.Vector3(-24, 0.22, 42)) < 6.5) {
+          const isPlaying = this.audioEngine.togglePlay();
+          this._updateWalkmanState(isPlaying);
+          this._showToast(isPlaying ? "🎧 SPUN 12\" JUNGLE VINYL // 166 BPM TECHSTEP DROPPED!" : "🎧 PAUSED RECORD SHOP TURNTABLES");
+          return;
+        }
+
+        // Tokyo Mart 24/7 at (24, 0.22, -18)
+        if (p.distanceTo(new THREE.Vector3(24, 0.22, -18)) < 6.5) {
+          this._showToast("🏪 BOUGHT CHILLED BOSS COFFEE CAN // REFRESHED");
+          return;
+        }
+
+        // Nightclub MATRIX at (-24, 0.22, -18)
+        if (p.distanceTo(new THREE.Vector3(-24, 0.22, -18)) < 6.5) {
+          this._showToast("🪩 ENTERED VIP LOUNGE // PULSING LIQUID DRUM & BASS");
+          return;
+        }
+
+        // Bus Stop at (13.5, 0.22, 16) or (-13.5, 0.22, -45)
+        if (p.distanceTo(new THREE.Vector3(13.5, 0.22, 16)) < 4.5 || p.distanceTo(new THREE.Vector3(-13.5, 0.22, -45)) < 4.5) {
+          this._showToast("🚏 CHECKED METRO TIMETABLE // NEXT HOVER-BUS IN 3 MIN");
+          return;
+        }
+
+        // Newsstand at (13.8, 0.22, 36) or (-13.8, 0.22, 16)
+        if (p.distanceTo(new THREE.Vector3(13.8, 0.22, 36)) < 4.5 || p.distanceTo(new THREE.Vector3(-13.8, 0.22, 16)) < 4.5) {
+          this._showToast("📰 BROWSED 1999 VIRTUAL GAMING MAGAZINE");
+          return;
+        }
+
+        return;
+      }
+
+      // ----------------------------------------------------
+      // Sector 1: Coastal Haven Specific Interactions
+      // ----------------------------------------------------
       // Check proximity to vending machines
       if (p.distanceTo(new THREE.Vector3(-3.2, 2.38, 2.8)) < 3.2) {
         this._showToast("🥫 DISPENSED ICED COFFEE // ATMOSPHERE +1");
@@ -295,7 +582,7 @@ class GameApp {
       this.audioEngine.setVolume(parseFloat(e.target.value));
     });
 
-    // Music is strictly OFF by default; user starts it by clicking Walkman PLAY
+    // Music starts off by default; user clicks Walkman PLAY
     this._updateWalkmanState(false);
   }
 
@@ -329,14 +616,72 @@ class GameApp {
 
     const p = this.player.position;
 
-    // 0. Quad Bike near foothills past shack
+    // Check quad bike prompt
     if (this.quadBike && p.distanceTo(this.quadBike.position) < 3.8) {
       this.actionText.textContent = "DRIVE 4X4 QUAD BIKE";
       this.actionPrompt.classList.remove('hidden');
       return;
     }
 
-    // 1. Treasure Chest
+    // ----------------------------------------------------
+    // Sector 2: Neon Metropolis Proximity
+    // ----------------------------------------------------
+    if (this.currentWorldId === 'cybercity') {
+      if (p.distanceTo(new THREE.Vector3(24, 0.22, 16)) < 6.5) {
+        this.actionText.textContent = "ORDER SPICY RAMEN";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(24, 0.22, 42)) < 6.5) {
+        this.actionText.textContent = "PLAY 1999 VIRTUAL RACER";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(-24, 0.22, 16)) < 6.5) {
+        this.actionText.textContent = "ORDER SYNTH COFFEE";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(-24, 0.22, 42)) < 6.5) {
+        this.actionText.textContent = this.audioEngine.isPlaying ? "PAUSE RECORD TURNTABLES" : "SPIN 12\" DNB VINYL";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(24, 0.22, -18)) < 6.5) {
+        this.actionText.textContent = "VISIT TOKYO MART 24/7";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(-24, 0.22, -18)) < 6.5) {
+        this.actionText.textContent = "ENTER NIGHTCLUB MATRIX";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(13.5, 0.22, 16)) < 4.5 || p.distanceTo(new THREE.Vector3(-13.5, 0.22, -45)) < 4.5) {
+        this.actionText.textContent = "CHECK BUS TIMETABLE";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      if (p.distanceTo(new THREE.Vector3(13.8, 0.22, 36)) < 4.5 || p.distanceTo(new THREE.Vector3(-13.8, 0.22, 16)) < 4.5) {
+        this.actionText.textContent = "READ GAMING MAGAZINE";
+        this.actionPrompt.classList.remove('hidden');
+        return;
+      }
+
+      this.actionPrompt.classList.add('hidden');
+      return;
+    }
+
+    // ----------------------------------------------------
+    // Sector 1: Coastal Haven Proximity
+    // ----------------------------------------------------
     const treasurePos = new THREE.Vector3(-48, this.world.getGroundHeight(-48, 16), 16);
     if (p.distanceTo(treasurePos) < 4.0) {
       this.actionText.textContent = "INSPECT SECRET TREASURE";
@@ -344,7 +689,6 @@ class GameApp {
       return;
     }
 
-    // 2. Beach House
     const beachHousePos = new THREE.Vector3(-34, this.world.getGroundHeight(-34, 30), 30);
     if (p.distanceTo(beachHousePos) < 5.5) {
       this.actionText.textContent = "RELAX AT BEACH SHACK";
@@ -352,7 +696,6 @@ class GameApp {
       return;
     }
 
-    // 3. Campfire
     const campfirePos = new THREE.Vector3(-22, this.world.getGroundHeight(-22, 20), 20);
     if (p.distanceTo(campfirePos) < 3.5) {
       this.actionText.textContent = "WARM HANDS BY FIRE";
@@ -360,7 +703,6 @@ class GameApp {
       return;
     }
 
-    // 4. Radio Tower
     const towerPos = new THREE.Vector3(-6, this.world.getGroundHeight(-6, 110), 110);
     if (p.distanceTo(towerPos) < 6.0) {
       this.actionText.textContent = "INSPECT RADIO MAST";
@@ -368,7 +710,6 @@ class GameApp {
       return;
     }
 
-    // 5. Vending Machines
     const distToVM = p.distanceTo(new THREE.Vector3(-3.2, 2.38, 2.8));
     if (distToVM < 3.0) {
       this.actionText.textContent = "BUY CHILLED DRINK";
@@ -376,7 +717,6 @@ class GameApp {
       return;
     }
 
-    // 6. Pier Gazebo viewpoint
     const distToGazebo = p.distanceTo(new THREE.Vector3(0, 2.38, -44));
     if (distToGazebo < 5.0) {
       this.actionText.textContent = "ENJOY TWILIGHT HORIZON";
@@ -384,16 +724,13 @@ class GameApp {
       return;
     }
 
-    // 7. Clifftop Overlook deck
     const overlookPos = new THREE.Vector3(48, this.world.getGroundHeight(48, 68), 68);
-    const distToOverlook = p.distanceTo(overlookPos);
-    if (distToOverlook < 5.5) {
+    if (p.distanceTo(overlookPos) < 5.5) {
       this.actionText.textContent = "REST AT CLIFFTOP LOOKOUT";
       this.actionPrompt.classList.remove('hidden');
       return;
     }
 
-    // 8. Beach Tiki Bar (relocated to open flat sand)
     const barPos = new THREE.Vector3(11, this.world.getGroundHeight(11, 14), 14);
     if (p.distanceTo(barPos) < 4.2) {
       this.actionText.textContent = "ORDER TROPICAL COCKTAIL";
@@ -401,7 +738,6 @@ class GameApp {
       return;
     }
 
-    // 9. Beach Loungers on the sand
     const loungerPos = new THREE.Vector3(22, this.world.getGroundHeight(22, 4.5), 4.5);
     if (p.distanceTo(loungerPos) < 4.8) {
       this.actionText.textContent = "CHILL ON BEACH LOUNGER";
@@ -409,7 +745,6 @@ class GameApp {
       return;
     }
 
-    // 10. DJ Deck in Dance Arena
     const djPos = new THREE.Vector3(0, this.world.getGroundHeight(0, 25.4), 25.4);
     if (p.distanceTo(djPos) < 4.2) {
       this.actionText.textContent = this.audioEngine.isPlaying ? "PAUSE TURNTABLES" : "SPIN VINYL // DROP BREAKBEAT";
@@ -417,7 +752,6 @@ class GameApp {
       return;
     }
 
-    // 11. Jet Skis near shore
     const js1 = new THREE.Vector3(8.5, 0.2, 1.5);
     const js2 = new THREE.Vector3(-8.5, 0.2, 1.5);
     const js3 = new THREE.Vector3(18.5, 0.2, 3.5);
@@ -427,7 +761,6 @@ class GameApp {
       return;
     }
 
-    // 12. Trail Bench on winding cliffside path
     const trailBenchPos = new THREE.Vector3(25, this.world.getGroundHeight(25, 44), 44);
     if (p.distanceTo(trailBenchPos) < 4.0) {
       this.actionText.textContent = "REST ON CLIFFSIDE BENCH";
@@ -442,39 +775,43 @@ class GameApp {
     const p = this.player.position;
     let zone = "COASTAL HAVEN // PIER SECTOR";
 
-    // Dynamic zone detection
-    if (this.quadBike && this.quadBike.isRidden) {
-      zone = "ALL-TERRAIN EXPLORER // 4X4 QUAD BIKE";
-    } else if (p.distanceTo(new THREE.Vector3(-36, this.world.getGroundHeight(-36, 46), 46)) < 12) {
-      zone = "NORTH FOOTHILLS // ALL-TERRAIN TRAIL";
-    } else if (Math.abs(p.x) < 5.5 && p.z >= 16 && p.z <= 28) {
-      zone = "NEON PLAZA // 164 BPM DANCE ARENA";
-    } else if (p.distanceTo(new THREE.Vector3(11, this.world.getGroundHeight(11, 14), 14)) < 8) {
-      zone = "TIKI COVE // SUNSET BEACH BAR";
-    } else if (p.distanceTo(new THREE.Vector3(22, this.world.getGroundHeight(22, 4.5), 4.5)) < 8) {
-      zone = "GOLDEN DUNES // SUNSET LOUNGE";
-    } else if (p.z >= -2 && p.z <= 5 && Math.abs(p.x) <= 22) {
-      zone = "COASTAL SURF // JET SKI MOORING";
-    } else if (p.distanceTo(new THREE.Vector3(25, this.world.getGroundHeight(25, 44), 44)) < 10) {
-      zone = "CLIFFSIDE TRAIL // SCENIC SWITCHBACK";
-    } else if (p.x >= 2 && p.x <= 48 && p.z >= 12 && p.z <= 68 && p.y > 4.0 && p.y < 19.0) {
-      zone = "CLIFFSIDE TRAIL // SCENIC ASCENT";
-    } else if (p.distanceTo(new THREE.Vector3(48, this.world.getGroundHeight(48, 68), 68)) < 10) {
-      zone = "SUMMIT DECK // PANORAMIC LOOKOUT";
-    } else if (p.distanceTo(new THREE.Vector3(-48, this.world.getGroundHeight(-48, 16), 16)) < 16) {
-      zone = "SMUGGLER'S COVE // X MARKS THE SPOT";
-    } else if (p.distanceTo(new THREE.Vector3(-34, this.world.getGroundHeight(-34, 30), 30)) < 14) {
-      zone = "SURF SHACK // DRIFTWOOD RETREAT";
-    } else if (p.distanceTo(new THREE.Vector3(-6, this.world.getGroundHeight(-6, 110), 110)) < 18) {
-      zone = "NORTH PEAK // BROADCAST TOWER";
-    } else if (p.z >= 0 && p.z < 35 && p.x < -10) {
-      zone = "WEST SHORELINE // DRIFTWOOD BEACH";
-    } else if (p.z >= 0 && p.z < 35) {
-      zone = "SUNSET SHORE // SANDY BEACH COVE";
-    } else if (p.z >= 35 && p.x > 25) {
-      zone = "CRAGGY BLUFFS // EASTERN SEA CLIFFS";
-    } else if (p.z >= 35 && p.x <= 25) {
-      zone = "EMERALD RIDGE // PINE FOREST TRAILS";
+    if (this.currentWorldId === 'cybercity') {
+      zone = this.world.getZoneName(p, this.quadBike && this.quadBike.isRidden);
+    } else {
+      // Coastal Haven zones
+      if (this.quadBike && this.quadBike.isRidden) {
+        zone = "ALL-TERRAIN EXPLORER // 4X4 QUAD BIKE";
+      } else if (p.distanceTo(new THREE.Vector3(-36, this.world.getGroundHeight(-36, 46), 46)) < 12) {
+        zone = "NORTH FOOTHILLS // ALL-TERRAIN TRAIL";
+      } else if (Math.abs(p.x) < 5.5 && p.z >= 16 && p.z <= 28) {
+        zone = "NEON PLAZA // 164 BPM DANCE ARENA";
+      } else if (p.distanceTo(new THREE.Vector3(11, this.world.getGroundHeight(11, 14), 14)) < 8) {
+        zone = "TIKI COVE // SUNSET BEACH BAR";
+      } else if (p.distanceTo(new THREE.Vector3(22, this.world.getGroundHeight(22, 4.5), 4.5)) < 8) {
+        zone = "GOLDEN DUNES // SUNSET LOUNGE";
+      } else if (p.z >= -2 && p.z <= 5 && Math.abs(p.x) <= 22) {
+        zone = "COASTAL SURF // JET SKI MOORING";
+      } else if (p.distanceTo(new THREE.Vector3(25, this.world.getGroundHeight(25, 44), 44)) < 10) {
+        zone = "CLIFFSIDE TRAIL // SCENIC SWITCHBACK";
+      } else if (p.x >= 2 && p.x <= 48 && p.z >= 12 && p.z <= 68 && p.y > 4.0 && p.y < 19.0) {
+        zone = "CLIFFSIDE TRAIL // SCENIC ASCENT";
+      } else if (p.distanceTo(new THREE.Vector3(48, this.world.getGroundHeight(48, 68), 68)) < 10) {
+        zone = "SUMMIT DECK // PANORAMIC LOOKOUT";
+      } else if (p.distanceTo(new THREE.Vector3(-48, this.world.getGroundHeight(-48, 16), 16)) < 16) {
+        zone = "SMUGGLER'S COVE // X MARKS THE SPOT";
+      } else if (p.distanceTo(new THREE.Vector3(-34, this.world.getGroundHeight(-34, 30), 30)) < 14) {
+        zone = "SURF SHACK // DRIFTWOOD RETREAT";
+      } else if (p.distanceTo(new THREE.Vector3(-6, this.world.getGroundHeight(-6, 110), 110)) < 18) {
+        zone = "NORTH PEAK // BROADCAST TOWER";
+      } else if (p.z >= 0 && p.z < 35 && p.x < -10) {
+        zone = "WEST SHORELINE // DRIFTWOOD BEACH";
+      } else if (p.z >= 0 && p.z < 35) {
+        zone = "SUNSET SHORE // SANDY BEACH COVE";
+      } else if (p.z >= 35 && p.x > 25) {
+        zone = "CRAGGY BLUFFS // EASTERN SEA CLIFFS";
+      } else if (p.z >= 35 && p.x <= 25) {
+        zone = "EMERALD RIDGE // PINE FOREST TRAILS";
+      }
     }
 
     const zoneElem = document.getElementById('zone-name');
@@ -518,12 +855,39 @@ class GameApp {
       this.quadBike.update(dt, this.inputManager, this.world, this.player);
     }
     this.cameraController.update(dt, this.player, this.inputManager);
-    this.world.update(dt);
+    if (this.world) {
+      this.world.update(dt);
+    }
 
-    // 2. Audio & Visualizer
+    // 2. Abyss Fall Safety Net in CyberCity (catch falls off map borders or into the void)
+    if (this.currentWorldId === 'cybercity') {
+      const isFallingPlayer = this.player.position.y < -10.0;
+      const isFallingQuad = this.quadBike && this.quadBike.position.y < -10.0;
+
+      if (isFallingPlayer || isFallingQuad) {
+        if (this.quadBike && this.quadBike.isRidden) {
+          this.quadBike.position.set(4.5, 0.22, 6);
+          this.quadBike.speed = 0;
+          this.quadBike.velocityY = 0;
+          this.player.position.set(4.5, 0.22, 6);
+          this.player.velocity.set(0, 0, 0);
+        } else {
+          this.player.position.set(0, 0.22, 6);
+          this.player.velocity.set(0, 0, 0);
+          if (isFallingQuad) {
+            this.quadBike.position.set(4.5, 0.2, 4);
+            this.quadBike.speed = 0;
+            this.quadBike.velocityY = 0;
+          }
+        }
+        this._showToast("⚡ GRAVITY TETHER ENGAGED // RESPAWNED ON MAIN BOULEVARD");
+      }
+    }
+
+    // 3. Audio & Visualizer
     this._updateVisualizer();
 
-    // 3. Proximity prompts & zone detection
+    // 4. Proximity prompts & zone detection
     this._checkProximityPrompts();
     this._updateZoneIndicator();
 
@@ -532,10 +896,12 @@ class GameApp {
       if (this.quadBike && this.quadBike.isRidden) {
         const speedMps = Math.round(Math.abs(this.quadBike.speed));
         const isShift = this.inputManager.keys['ShiftLeft'] || this.inputManager.keys['ShiftRight'];
+        const isFwd = this.inputManager.keys['KeyW'] || this.inputManager.keys['ArrowUp'];
+        const isBoosting = isShift && isFwd && speedMps > 14;
         if (!this.quadBike.isGrounded) {
           this.speedBadge.textContent = `✈️ AIRTIME ${speedMps} M/S`;
           this.speedBadge.className = 'speed-badge airtime';
-        } else if (isShift && speedMps > 15) {
+        } else if (isBoosting) {
           this.speedBadge.textContent = `🔥 NITRO ${speedMps} M/S`;
           this.speedBadge.className = 'speed-badge nitro';
         } else if (speedMps > 0) {
@@ -560,10 +926,10 @@ class GameApp {
       }
     }
 
-    // 4. Render
+    // 5. Render
     this.sceneManager.render();
 
-    // 5. FPS update
+    // 6. FPS update
     this.frameCount++;
     if (now - this.lastFpsUpdate >= 1000) {
       const fps = Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate));

@@ -307,4 +307,13 @@ export class CollisionWorld {
       }
     }
   }
+
+  getGroundHeight(x, z, currentY = null, baseTerrain = 0) {
+    const testY = currentY !== null ? currentY : baseTerrain;
+    return this.getSurfaceHeight(x, z, testY, baseTerrain);
+  }
+
+  resolveCollisions(pos, radius, currentY) {
+    return this.resolveHorizontalCollisions(pos, radius, currentY);
+  }
 }

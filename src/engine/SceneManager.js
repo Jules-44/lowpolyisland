@@ -110,6 +110,28 @@ export const SKY_THEMES = {
     sunIntensity: 2.6,
     sunDiscColor: 0xfffae6,
     haloColor: 0xffd870
+  },
+  CYBER_MIDNIGHT: {
+    id: 'CYBER_MIDNIGHT',
+    name: 'SYNTHWAVE DUSK',
+    shortName: 'DUSK',
+    vibe: 'Golden-Coral Dusk Horizon & Electric Lavender Zenith',
+    topColor: 0x221f45,      // Mellow indigo twilight (not pitch black)
+    midColor: 0x6e387e,      // Rich dusk magenta-violet
+    horizonColor: 0xff6b60,  // Radiant golden-coral dusk glow
+    bottomColor: 0x2c223c,
+    fogColor: 0x483256,      // Luminous twilight haze (smooth atmospheric blend)
+    fogNear: 150,
+    fogFar: 800,             // Expansive draw distance across multi-block city
+    ambientColor: 0x9c8dbd,  // Soft lavender-blue ambient fill so building details are clearly visible
+    ambientIntensity: 2.4,
+    hemiSky: 0xff99b0,      // Warm dusk sky bounce
+    hemiGround: 0x3d3a54,   // Soft street reflection
+    hemiIntensity: 1.6,
+    sunColor: 0xffb366,      // Warm golden dusk sun accent
+    sunIntensity: 3.2,
+    sunDiscColor: 0xff4f38,  // Radiant golden-coral sunset disc
+    haloColor: 0xffbb44      // Warm golden corona
   }
 };
 
@@ -132,15 +154,15 @@ export class SceneManager {
     this.scene.background = new THREE.Color(defaultTheme.fogColor);
     this.scene.fog = new THREE.Fog(defaultTheme.fogColor, defaultTheme.fogNear, defaultTheme.fogFar);
 
-    // 2. Camera
+    // 2. Camera (far plane 950m for vast multi-block city horizons)
     const aspect = window.innerWidth / window.innerHeight;
-    this.camera = new THREE.PerspectiveCamera(62, aspect, 0.1, 500);
+    this.camera = new THREE.PerspectiveCamera(62, aspect, 0.1, 950);
     this.camera.position.set(0, 5, 12);
 
     // 3. Renderer
-    this.retroPixelMode = true; // PS1 / late-90s authentic pixelation
+    this.retroPixelMode = false; // HD crisp graphics by default (PS1 pixelation is optional via toggle)
     this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
+      antialias: true,
       powerPreference: 'high-performance'
     });
     this.renderer.shadowMap.enabled = true;
@@ -200,8 +222,8 @@ export class SceneManager {
   _setupSkyGradient() {
     const theme = SKY_THEMES[this.currentThemeKey];
 
-    // Low-poly retro sky hemisphere
-    const skyGeo = new THREE.SphereGeometry(250, 24, 16);
+    // Low-poly retro sky hemisphere covering entire city expanse
+    const skyGeo = new THREE.SphereGeometry(850, 24, 16);
     this.skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       uniforms: {
@@ -339,6 +361,7 @@ export class SceneManager {
   }
 
   _applyResolution() {
+    const retroOverlay = document.getElementById('retro-overlay');
     if (this.retroPixelMode) {
       // 480x270 aspect-scaled resolution for authentic PS1 / late-90s look
       const scaleFactor = 2.2;
@@ -348,11 +371,14 @@ export class SceneManager {
       this.renderer.domElement.style.imageRendering = 'pixelated';
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
+      if (retroOverlay) retroOverlay.classList.add('active');
     } else {
+      // Crisp native resolution with smooth edges
       this.renderer.setSize(window.innerWidth, window.innerHeight, true);
       this.renderer.domElement.style.imageRendering = 'auto';
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
+      if (retroOverlay) retroOverlay.classList.remove('active');
     }
   }
 

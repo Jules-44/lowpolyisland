@@ -29,6 +29,9 @@
         </div>
         <div class="time-display" id="time-display">TWILIGHT 19:42</div>
         <div class="top-bar-right">
+          <button class="top-bar-btn level-select-btn" id="level-select-btn" title="Choose Destination Level (or press [L])">
+            <span class="icon">🗺️</span> LEVEL SELECT [L]
+          </button>
           <div class="speed-badge" id="speed-badge">WALK 7 M/S</div>
           <div class="fps-display" id="fps-display">60 FPS</div>
         </div>
@@ -55,8 +58,8 @@
             <button class="cam-option-btn" id="pointer-lock-btn" title="Lock Cursor for 1-Finger Look (ESC to release)">
               LOCK
             </button>
-            <button class="cam-option-btn" id="retro-res-btn" title="Toggle PS1 Pixelation vs HD Mode">
-              PS1 PIXELS
+            <button class="cam-option-btn alt-mode" id="retro-res-btn" title="Toggle PS1 Pixelation vs Crisp HD Mode">
+              PS1 GRAPHICS: OFF
             </button>
             <button class="cam-option-btn alt-mode" id="sky-theme-btn" title="Cycle Sunset Palette (or press [T])">
               CYCLE [T]
@@ -71,6 +74,7 @@
               <button class="sunset-opt-btn" data-theme="TROPICAL_MANGO" title="Tropical Mango Sunset">🥭 TROPICAL</button>
               <button class="sunset-opt-btn" data-theme="PASTEL_PEACH" title="Pastel Peach Dusk">🌸 PEACH</button>
               <button class="sunset-opt-btn" data-theme="AFTERNOON_GOLD" title="Afternoon Sunshine">✨ AFTERNOON</button>
+              <button class="sunset-opt-btn" data-theme="CYBER_MIDNIGHT" title="Electric Cyber Midnight">⚡ CYBER</button>
             </div>
           </div>
           <div class="controls-hints">
@@ -115,6 +119,92 @@
           </div>
         </div>
       </footer>
+    </div>
+
+    <!-- Level Select Modal Screen -->
+    <div id="level-select-modal" class="modal-overlay hidden">
+      <div class="level-select-card">
+        <div class="modal-header">
+          <div class="header-left">
+            <div class="system-brand">SONO-98 BIOS // STAGE ARCHIVE</div>
+            <h1 class="modal-title">DESTINATION SECTOR SELECT</h1>
+          </div>
+          <button class="modal-close-btn" id="level-close-btn" title="Resume Game (ESC)">✕ RESUME [ESC]</button>
+        </div>
+
+        <div class="level-cards-grid">
+          <!-- Level 1 Card -->
+          <div class="level-card" id="card-level-island" data-level="island">
+            <div class="level-preview island-preview">
+              <div class="preview-badge">STAGE 01 // VIBE: CHILL</div>
+              <div class="preview-hero-icon">🌴</div>
+              <div class="preview-tag-corner">TROPICAL ATOLL</div>
+            </div>
+            <div class="level-content">
+              <div class="level-code">SECTOR A-01 // LOW-POLY ATOLL</div>
+              <h2 class="level-name">COASTAL HAVEN</h2>
+              <p class="level-desc">
+                Sunset boardwalk pier leading to rolling dunes, clifftop overlook, beachfront tiki bar, secret pirate cave, and lighthouse reef.
+              </p>
+              <div class="level-specs">
+                <span class="spec-pill">☀️ TWILIGHT SUNSET</span>
+                <span class="spec-pill">🏎️ 4X4 DUNE QUAD</span>
+                <span class="spec-pill">🎵 164 BPM LIQUID DNB</span>
+              </div>
+              <button class="level-launch-btn" id="launch-island-btn">
+                <span>▶ ENTER COASTAL HAVEN</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Level 2 Card -->
+          <div class="level-card active-cyber" id="card-level-cyber" data-level="cybercity">
+            <div class="level-preview cyber-preview">
+              <div class="preview-badge neon-badge">STAGE 02 // VIBE: SYNTHWAVE STREETS</div>
+              <div class="preview-hero-icon">🌆</div>
+              <div class="preview-tag-corner neon-corner">SYNTH METROPOLIS</div>
+            </div>
+            <div class="level-content">
+              <div class="level-code neon-code">SECTOR B-02 // HIGHWAY GRID</div>
+              <h2 class="level-name neon-title">SYNTH METROPOLIS</h2>
+              <p class="level-desc">
+                Multi-lane boulevards, illuminated shopfronts (Ramen, Arcade, Cafe), glowing skyscraper windows, elevated expressway flyover, and traffic lights.
+              </p>
+              <div class="level-specs">
+                <span class="spec-pill neon-pill">🌆 SYNTHWAVE SUNSET</span>
+                <span class="spec-pill neon-pill">⚡ METRO HIGHWAY QUAD</span>
+                <span class="spec-pill neon-pill">🎵 166 BPM TECHSTEP VIP</span>
+              </div>
+              <button class="level-launch-btn neon-launch-btn" id="launch-cyber-btn">
+                <span>▶ ENTER SYNTH METROPOLIS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="footer-hint">HOTKEYS: <kbd>1</kbd> COASTAL HAVEN &nbsp;|&nbsp; <kbd>2</kbd> NEON METROPOLIS &nbsp;|&nbsp; <kbd>L</kbd> TOGGLE SELECTOR</div>
+          <div class="footer-status"><span class="pulse-dot"></span> MATRIX DISK LOADED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retro BIOS Loading Screen Modal -->
+    <div id="loading-screen-modal" class="loading-overlay hidden">
+      <div class="loading-box">
+        <div class="loading-brand">SONO-98 MATRIX ENGINE // V2.4</div>
+        <div class="loading-icon-wrap">
+          <div class="loading-poly-wireframe"></div>
+        </div>
+        <div class="loading-target-text" id="loading-target-text">BUILDING SECTOR: COASTAL HAVEN...</div>
+        <div class="loading-bar-wrap">
+          <div class="loading-bar-fill" id="loading-bar-fill"></div>
+        </div>
+        <div class="loading-meta-row">
+          <span class="loading-status" id="loading-status-text">INITIALIZING LOW-POLY GEOMETRIES...</span>
+          <span class="loading-percent" id="loading-percent-text">0%</span>
+        </div>
+      </div>
     </div>
 
     <!-- Entry script -->

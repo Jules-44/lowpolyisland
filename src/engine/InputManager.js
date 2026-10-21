@@ -29,6 +29,8 @@ export class InputManager {
     // Callback hooks
     this.onCameraToggle = null; // 'V'
     this.onInteract = null;     // 'E'
+    this.onSkyToggle = null;     // 'T'
+    this.onLevelSelect = null;   // 'L'
     this.onArrowModeToggle = null;
     this.onPointerLockChange = null;
 
@@ -96,6 +98,10 @@ export class InputManager {
       if (e.code === 'KeyE' && !e.repeat) {
         if (this.onInteract) this.onInteract();
       }
+
+      if (e.code === 'KeyL' && !e.repeat) {
+        if (this.onLevelSelect) this.onLevelSelect();
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -108,6 +114,14 @@ export class InputManager {
           this.sprintHoldDuration = 0;
         }
       }
+    });
+
+    // Reset keys on window blur so keys (like Shift or WASD) never get stuck
+    window.addEventListener('blur', () => {
+      this.keys = {};
+      this.isDoubleTapZoom = false;
+      this.sprintHoldDuration = 0;
+      this.mouse.isDragging = false;
     });
 
     // 2. Trackpad Two-Finger Swipe (wheel event) — ZERO CLICKS NEEDED!

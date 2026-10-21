@@ -49,6 +49,30 @@ export class AudioEngine {
           [246.94, 311.13, 369.99, 493.88], // Badd9
           [329.63, 415.30, 493.88, 659.25], // Emaj9
         ]
+      },
+      {
+        title: "CYBER ROOFTOPS (TECHSTEP VIP)",
+        artist: "NEO TOKYO UNIT",
+        bpm: 166,
+        key: "Dm9",
+        chords: [
+          [293.66, 349.23, 440.00, 523.25], // Dm7
+          [261.63, 329.63, 392.00, 493.88], // Cmaj7
+          [246.94, 311.13, 369.99, 440.00], // Bdim
+          [233.08, 293.66, 349.23, 466.16], // Bbmaj7
+        ]
+      },
+      {
+        title: "NEON OVERPASS (LIQUID FUNK)",
+        artist: "CIRCUIT RUNNER",
+        bpm: 168,
+        key: "Gm7",
+        chords: [
+          [392.00, 466.16, 587.33, 739.99], // Gm9
+          [349.23, 440.00, 523.25, 659.25], // Fmaj7
+          [311.13, 392.00, 466.16, 587.33], // Ebmaj7
+          [293.66, 369.99, 440.00, 554.37], // D7sus4
+        ]
       }
     ];
 
@@ -57,6 +81,17 @@ export class AudioEngine {
     this.step = 0;
     this.timerId = null;
     this.oceanNode = null;
+  }
+
+  setTrack(index) {
+    if (index >= 0 && index < this.tracks.length) {
+      this.currentTrackIndex = index;
+      this.bpm = this.tracks[index].bpm;
+      this.currentChordIndex = 0;
+      this.step = 0;
+      return this.tracks[this.currentTrackIndex];
+    }
+    return this.getCurrentTrack();
   }
 
   _initContext() {

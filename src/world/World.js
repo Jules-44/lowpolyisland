@@ -16,6 +16,8 @@ import { CollisionWorld } from './CollisionWorld.js';
 export class World {
   constructor(scene) {
     this.scene = scene;
+    this.rootGroup = new THREE.Group();
+    this.scene.add(this.rootGroup);
     this.time = 0;
     this.collisionWorld = new CollisionWorld();
 
@@ -57,7 +59,7 @@ export class World {
 
     this.waterMesh = new THREE.Mesh(waterGeo, this.waterMat);
     this.waterMesh.position.y = -0.2;
-    this.scene.add(this.waterMesh);
+    this.rootGroup.add(this.waterMesh);
 
     this.waterPosAttribute = waterGeo.attributes.position;
     this.waterBaseY = new Float32Array(this.waterPosAttribute.count);
@@ -182,7 +184,7 @@ export class World {
 
     this.terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
     this.terrainMesh.receiveShadow = true;
-    this.scene.add(this.terrainMesh);
+    this.rootGroup.add(this.terrainMesh);
   }
 
   _getTrailHeightAndDist(x, z) {
@@ -266,7 +268,7 @@ export class World {
       this._createRockCluster(rx, ry + 1.5, rz, 4.5, 3.5, 4.0, 0x625a70);
     }
 
-    this.scene.add(this.rockGroup);
+    this.rootGroup.add(this.rockGroup);
   }
 
   _createRockCluster(x, y, z, sx, sy, sz, colorHex) {
@@ -394,7 +396,7 @@ export class World {
       }
     });
 
-    this.scene.add(this.pierGroup);
+    this.rootGroup.add(this.pierGroup);
   }
 
   _buildClifftopOverlook() {
@@ -467,7 +469,7 @@ export class World {
     lookLight.position.set(-3.2, 3.2, -3.2);
     deckGroup.add(lookLight);
 
-    this.scene.add(deckGroup);
+    this.rootGroup.add(deckGroup);
   }
 
   _buildForestAndVegetation() {
@@ -503,7 +505,7 @@ export class World {
       this._createPalmTree(x, z);
     });
 
-    this.scene.add(this.vegetationGroup);
+    this.rootGroup.add(this.vegetationGroup);
   }
 
   _createPineTree(x, z, scale = 1.0) {
@@ -624,7 +626,7 @@ export class World {
     this.lighthouseSpot.target = this.lighthouseTarget;
     this.lighthouseGroup.add(this.lighthouseSpot);
 
-    this.scene.add(this.lighthouseGroup);
+    this.rootGroup.add(this.lighthouseGroup);
   }
 
   _buildVendingMachines() {
@@ -654,8 +656,8 @@ export class World {
     light2.position.set(0, 1.3, 0.6);
     vm2.children[2] = light2;
 
-    this.scene.add(vmGroup);
-    this.scene.add(vm2);
+    this.rootGroup.add(vmGroup);
+    this.rootGroup.add(vm2);
 
     // Solid jumpable vending machines on pier
     if (this.collisionWorld) {
@@ -694,7 +696,7 @@ export class World {
       light.position.y = 3.6;
       lamp.add(light);
 
-      this.scene.add(lamp);
+      this.rootGroup.add(lamp);
 
       if (this.collisionWorld) {
         this.collisionWorld.addCylinder(x, z, groundY, groundY + 3.6, 0.16, false, 'streetlamp');
@@ -811,7 +813,7 @@ export class World {
     chairSeat.position.set(2.2, 2.2, 1.8);
     this.beachHouseGroup.add(chairSeat);
 
-    this.scene.add(this.beachHouseGroup);
+    this.rootGroup.add(this.beachHouseGroup);
 
     // Register solid beach house colliders (deck, stairs, cabin, roof, lounger)
     if (this.collisionWorld) {
@@ -972,7 +974,7 @@ export class World {
     chestGroup.add(treasureGlow);
 
     this.treasureGroup.add(chestGroup);
-    this.scene.add(this.treasureGroup);
+    this.rootGroup.add(this.treasureGroup);
 
     // Register solid treasure cove colliders (chest, excavated mound)
     if (this.collisionWorld) {
@@ -1058,7 +1060,7 @@ export class World {
     this.radioBeaconLight.position.y = beaconY;
     this.radioTowerGroup.add(this.radioBeaconLight);
 
-    this.scene.add(this.radioTowerGroup);
+    this.rootGroup.add(this.radioTowerGroup);
 
     // Register solid radio tower plinth and base
     if (this.collisionWorld) {
@@ -1155,7 +1157,7 @@ export class World {
     stbdLight.position.set(-16.0, 8.5, 4.8);
     this.shipGroup.add(stbdLight);
 
-    this.scene.add(this.shipGroup);
+    this.rootGroup.add(this.shipGroup);
   }
 
   _buildCampfireAndBuoys() {
@@ -1202,7 +1204,7 @@ export class World {
     benchLog.position.set(0, 0.22, 1.6);
     this.campfireGroup.add(benchLog);
 
-    this.scene.add(this.campfireGroup);
+    this.rootGroup.add(this.campfireGroup);
 
     // Register solid campfire colliders (stones, log bench)
     if (this.collisionWorld) {
@@ -1235,7 +1237,7 @@ export class World {
       ptLight.position.y = 1.5;
       buoy.add(ptLight);
 
-      this.scene.add(buoy);
+      this.rootGroup.add(buoy);
       this.buoys.push({ mesh: buoy, light: ptLight });
     });
   }
@@ -1461,7 +1463,7 @@ export class World {
     barGlow2.position.set(1.0, 2.2, 1.1);
     this.beachBarGroup.add(barGlow2);
 
-    this.scene.add(this.beachBarGroup);
+    this.rootGroup.add(this.beachBarGroup);
 
     // 7. Solid Collision Registration for Tiki Bar
     if (this.collisionWorld) {
@@ -1621,7 +1623,7 @@ export class World {
       }
     });
 
-    this.scene.add(this.loungersGroup);
+    this.rootGroup.add(this.loungersGroup);
   }
 
   _buildDanceArea() {
@@ -1840,7 +1842,7 @@ export class World {
     washLight2.position.set(2.0, 2.8, 0);
     this.danceGroup.add(washLight2);
 
-    this.scene.add(this.danceGroup);
+    this.rootGroup.add(this.danceGroup);
 
     // 5. Solid Collision Registration for Dance Area
     if (this.collisionWorld) {
@@ -1944,9 +1946,9 @@ export class World {
       const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.7, 5), new THREE.MeshLambertMaterial({ color: 0x4a321c, flatShading: true }));
       stake.position.set(cfg.x + Math.sin(cfg.rot) * 1.5, this.getGroundHeight(cfg.x, cfg.z + 1.6) + 0.25, cfg.z + Math.cos(cfg.rot) * 1.5 + 0.6);
       stake.castShadow = true;
-      this.scene.add(stake);
+      this.rootGroup.add(stake);
 
-      this.scene.add(jsGroup);
+      this.rootGroup.add(jsGroup);
       this.jetSkis.push({
         group: jsGroup,
         baseY: 0.15,
@@ -2063,7 +2065,7 @@ export class World {
     });
 
     this.trailGroup.add(benchGroup);
-    this.scene.add(this.trailGroup);
+    this.rootGroup.add(this.trailGroup);
 
     // Register bench collision
     if (this.collisionWorld) {
@@ -2157,7 +2159,7 @@ export class World {
       this.shrubsGroup.add(cluster);
     });
 
-    this.scene.add(this.shrubsGroup);
+    this.rootGroup.add(this.shrubsGroup);
   }
 
   _buildStuntRamps() {
@@ -2217,7 +2219,7 @@ export class World {
       }
     });
 
-    this.scene.add(this.rampsGroup);
+    this.rootGroup.add(this.rampsGroup);
   }
 
   /**
@@ -2335,6 +2337,15 @@ export class World {
         b.mesh.position.y = Math.sin(this.time * 1.6 + i * 1.8) * 0.18;
         b.mesh.rotation.z = Math.sin(this.time * 1.2 + i * 1.5) * 0.08;
       });
+    }
+  }
+
+  destroy() {
+    if (this.rootGroup) {
+      this.scene.remove(this.rootGroup);
+    }
+    if (this.collisionWorld) {
+      this.collisionWorld.colliders = [];
     }
   }
 }

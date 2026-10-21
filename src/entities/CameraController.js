@@ -41,6 +41,11 @@ export class CameraController {
     return this.mode;
   }
 
+  reset() {
+    this.currentPosition.set(0, 0, 0);
+    this.currentTarget.set(0, 0, 0);
+  }
+
   update(dt, player, input) {
     if (!player) return;
 
