@@ -94,6 +94,24 @@ export class CollisionWorld {
     });
   }
 
+  addStaticBox(cx, cy, cz, w, h, d, isWalkableTop = false, tag = '') {
+    this.addBox(
+      cx - w * 0.5, cx + w * 0.5,
+      cz - d * 0.5, cz + d * 0.5,
+      cy - h * 0.5, cy + h * 0.5,
+      isWalkableTop,
+      tag
+    );
+  }
+
+  addStaticCylinder(x, y, z, radius, height, isWalkableTop = false, tag = '') {
+    this.addCylinder(x, z, y - height * 0.5, y + height * 0.5, radius, isWalkableTop, tag);
+  }
+
+  resolve(pos, radius, currentY) {
+    this.resolveHorizontalCollisions(pos, radius, currentY);
+  }
+
   /**
    * Returns the surface elevation underneath point (x, z) considering both
    * terrain and any walkable object tops beneath the player.
@@ -200,14 +218,20 @@ export class CollisionWorld {
         continue;
       }
 
-      // Horizontal resolution by shape:
+      // Horizontal resolution by shape with fast coarse rejection:
       if (col.type === 'box') {
+        if (pos.x < col.minX - radius || pos.x > col.maxX + radius ||
+            pos.z < col.minZ - radius || pos.z > col.maxZ + radius) continue;
         this._resolveBoxCollision(pos, radius, col);
       } else if (col.type === 'rotated_box') {
         this._resolveRotatedBoxCollision(pos, radius, col);
       } else if (col.type === 'cylinder') {
+        const maxDist = radius + col.radius;
+        if (Math.abs(pos.x - col.x) > maxDist || Math.abs(pos.z - col.z) > maxDist) continue;
         this._resolveCylinderCollision(pos, radius, col.x, col.z, col.radius);
       } else if (col.type === 'boulder') {
+        const maxDist = radius + Math.max(col.radiusX, col.radiusZ);
+        if (Math.abs(pos.x - col.x) > maxDist || Math.abs(pos.z - col.z) > maxDist) continue;
         const avgR = (col.radiusX + col.radiusZ) * 0.45;
         this._resolveCylinderCollision(pos, radius, col.x, col.z, avgR);
       }

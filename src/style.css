@@ -633,7 +633,7 @@ canvas {
 
 .level-select-card {
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   background: rgba(14, 18, 32, 0.94);
   border: 2px solid rgba(77, 238, 234, 0.6);
   box-shadow: 0 0 35px rgba(77, 238, 234, 0.25), inset 0 0 20px rgba(77, 238, 234, 0.08);
@@ -702,11 +702,11 @@ canvas {
 /* Level Cards Grid */
 .level-cards-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   .level-cards-grid {
     grid-template-columns: 1fr;
   }
@@ -734,6 +734,11 @@ canvas {
   box-shadow: 0 0 24px rgba(255, 65, 145, 0.4);
 }
 
+.level-card.kamakura-card:hover {
+  border-color: #ff5533;
+  box-shadow: 0 0 24px rgba(255, 85, 51, 0.45);
+}
+
 /* Preview Header */
 .level-preview {
   height: 120px;
@@ -754,6 +759,11 @@ canvas {
   border-bottom: 2px solid var(--neon-pink);
 }
 
+.kamakura-preview {
+  background: linear-gradient(135deg, #1a162b 0%, #682635 50%, #e86830 100%);
+  border-bottom: 2px solid #ff5533;
+}
+
 .preview-badge {
   position: absolute;
   top: 10px;
@@ -772,6 +782,11 @@ canvas {
   color: var(--neon-pink);
 }
 
+.preview-badge.kamakura-badge {
+  border-color: #ffaa33;
+  color: #ffaa33;
+}
+
 .preview-tag-corner {
   position: absolute;
   bottom: 8px;
@@ -784,6 +799,10 @@ canvas {
 
 .preview-tag-corner.neon-corner {
   color: var(--neon-cyan);
+}
+
+.preview-tag-corner.kamakura-corner {
+  color: #ffaa55;
 }
 
 .preview-hero-icon {
@@ -816,6 +835,10 @@ canvas {
   color: var(--neon-pink);
 }
 
+.level-code.kamakura-code {
+  color: #ffaa44;
+}
+
 .level-name {
   font-family: var(--font-display);
   font-size: 18px;
@@ -825,6 +848,10 @@ canvas {
 
 .level-name.neon-title {
   text-shadow: 0 0 10px rgba(255, 65, 145, 0.5);
+}
+
+.level-name.kamakura-title {
+  text-shadow: 0 0 10px rgba(255, 85, 51, 0.5);
 }
 
 .level-desc {
@@ -854,6 +881,11 @@ canvas {
 .spec-pill.neon-pill {
   border-color: rgba(0, 240, 255, 0.4);
   color: var(--neon-cyan);
+}
+
+.spec-pill.kamakura-pill {
+  border-color: rgba(255, 120, 60, 0.4);
+  color: #ffaa77;
 }
 
 .level-launch-btn {
@@ -889,6 +921,18 @@ canvas {
   background: var(--neon-pink);
   color: #fff;
   box-shadow: 0 0 20px rgba(255, 65, 145, 0.8);
+}
+
+.level-launch-btn.kamakura-launch-btn {
+  background: rgba(255, 85, 51, 0.15);
+  border-color: #ff5533;
+  color: #ff8866;
+}
+
+.level-launch-btn.kamakura-launch-btn:hover {
+  background: #ff5533;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(255, 85, 51, 0.8);
 }
 
 .modal-footer {

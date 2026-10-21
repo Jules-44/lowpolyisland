@@ -340,7 +340,13 @@ export class Player {
 
     // 6. Surface collision query (terrain + tops of solid objects)
     const groundHeight = world ? world.getGroundHeight(this.position.x, this.position.z, this.position.y) : 0;
+    const wasGrounded = this.isGrounded;
     if (this.position.y <= groundHeight) {
+      this.position.y = groundHeight;
+      this.velocity.y = 0;
+      this.isGrounded = true;
+    } else if (wasGrounded && (this.position.y - groundHeight) < 0.4 && this.velocity.y <= 0) {
+      // Smoothly stick to downward slopes without jittering into airborne state
       this.position.y = groundHeight;
       this.velocity.y = 0;
       this.isGrounded = true;
