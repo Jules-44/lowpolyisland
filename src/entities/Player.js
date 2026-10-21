@@ -24,9 +24,19 @@ export class Player {
     this.moveState = 'WALK'; // 'WALK' | 'RUN' | 'ZOOM' | 'IDLE'
     this.isDrivingQuad = false;
 
-    this.jumpForce = 9.5;
+    this.jumpForce = 10.5;
     this.gravity = 25.0;
     this.isGrounded = true;
+
+    // Bouncy Jump & Combo Tracker
+    this.bounceCombo = 0; // 0: grounded idle, 1: 1st bounce, 2: 2nd bounce, 3: 3rd super bounce
+    this.lastLandTime = 0;
+    this.bounceWindow = 0.38; // 380ms window after landing to chain next bounce
+    this.airTime = 0;
+    this.squashStretch = new THREE.Vector3(1, 1, 1);
+
+    // Knockback physics
+    this.knockbackTimer = 0;
 
     this.animTime = 0;
     this.isMoving = false;
@@ -492,11 +502,24 @@ export class Player {
     const currentGroundY = world ? world.getGroundHeight(this.position.x, this.position.z, this.position.y) : 0;
     const heightAboveGround = this.position.y - currentGroundY;
 
+    // Track airborne time vs grounded state
+    if (!this.isGrounded) {
+      this.airTime += dt;
+    } else {
+      this.airTime = 0;
+      // Reset combo if grounded without bouncing for longer than bounce window
+      if ((performance.now() - this.lastLandTime) / 1000 > this.bounceWindow) {
+        this.bounceCombo = 0;
+      }
+    }
+
     // Check hang glider auto-deployment condition:
-    // If airborne and falling (e.g. jumped off cliff or walked off ledge with height > 1.6m)
-    // Or if airborne and pressing Jump in midair
-    if (!this.isGrounded && !this.isDrivingQuad) {
-      if ((this.velocity.y < -0.3 && heightAboveGround > 1.6) || (input.isJump() && heightAboveGround > 1.2)) {
+    // Glider should ONLY kick in if falling from a height drop greater than the biggest jump!
+    // The 3rd super bounce apex is ~5.1m above takeoff.
+    // Setting threshold to heightAboveGround > 6.8m ensures that all ground bounces (even the super jump)
+    // NEVER deploy the hang glider. Glider ONLY deploys when leaping off high cliffs or towers!
+    if (!this.isGrounded && !this.isDrivingQuad && this.knockbackTimer <= 0) {
+      if (heightAboveGround > 6.8 && this.airTime > 0.45 && (this.velocity.y < -1.5 || input.isJump())) {
         this.isGliding = true;
       }
     }
@@ -685,10 +708,9 @@ export class Player {
       world.resolveCollisions(this.position, this.radius, this.position.y);
     }
 
-    // 3. Jump trigger
-    if (this.isGrounded && input.isJump()) {
-      this.velocity.y = this.jumpForce;
-      this.isGrounded = false;
+    // 3. Jump trigger & Continuous Bouncing
+    if (this.isGrounded && input.isJump() && this.knockbackTimer <= 0) {
+      this._performBounce();
     }
 
     // 4. Gravity acceleration when airborne
@@ -706,6 +728,10 @@ export class Player {
       this.position.y = groundHeight;
       this.velocity.y = 0;
       this.isGrounded = true;
+
+      if (!wasGrounded) {
+        this._onLanded(input);
+      }
     } else if (wasGrounded && (this.position.y - groundHeight) < 0.4 && this.velocity.y <= 0) {
       // Smoothly stick to downward slopes without jittering into airborne state
       this.position.y = groundHeight;
@@ -718,6 +744,18 @@ export class Player {
 
     this.mesh.position.copy(this.position);
     this.mesh.rotation.y = this.rotation;
+
+    // Apply squash and stretch scale & knockback tumbling
+    this.squashStretch.x += (1.0 - this.squashStretch.x) * Math.min(1.0, dt * 14.0);
+    this.squashStretch.y += (1.0 - this.squashStretch.y) * Math.min(1.0, dt * 14.0);
+    this.squashStretch.z += (1.0 - this.squashStretch.z) * Math.min(1.0, dt * 14.0);
+    this.mesh.scale.copy(this.squashStretch);
+
+    if (this.knockbackTimer > 0) {
+      this.knockbackTimer -= dt;
+      this.mesh.rotation.x += dt * 8.0;
+      this.mesh.rotation.z += dt * 6.0;
+    }
 
     // Update ground shadow (stays on terrain surface even during high jumps)
     if (this.shadowMesh) {
@@ -786,6 +824,79 @@ export class Player {
         if (dp.life <= 0) dp.mesh.visible = false;
       }
     });
+  }
+
+  applyKnockback(forceX, forceY, forceZ) {
+    if (this.isDrivingQuad) return;
+    this.velocity.x = forceX;
+    this.velocity.z = forceZ;
+    this.velocity.y = Math.max(this.velocity.y, forceY || 8.5);
+    this.isGrounded = false;
+    this.isGliding = false;
+    if (this.gliderGroup) this.gliderGroup.visible = false;
+    this.gliderDeployProgress = 0;
+    this.knockbackTimer = 0.65;
+    this.squashStretch.set(0.8, 1.35, 0.8);
+  }
+
+  _performBounce() {
+    this.isGrounded = false;
+    this.airTime = 0;
+    const now = performance.now();
+    const timeSinceLand = (now - this.lastLandTime) / 1000;
+
+    // Advance bounce combo (1 -> 2 -> 3 -> 1...)
+    if (timeSinceLand < this.bounceWindow && this.bounceCombo > 0) {
+      this.bounceCombo = (this.bounceCombo % 3) + 1;
+    } else {
+      this.bounceCombo = 1;
+    }
+
+    let jumpSpeed = this.jumpForce; // Base 10.5 m/s (~2.2m apex)
+    if (this.bounceCombo === 2) {
+      jumpSpeed = 12.2; // 2nd bounce: springy (~3.0m apex)
+      this.squashStretch.set(0.84, 1.25, 0.84);
+    } else if (this.bounceCombo === 3) {
+      jumpSpeed = 16.0; // 3rd bounce: SUPER BOUNCE! (~5.1m apex)
+      this.squashStretch.set(0.74, 1.42, 0.74);
+      this._spawnSuperBounceShockwave();
+    } else {
+      // 1st bounce
+      jumpSpeed = 10.5;
+      this.squashStretch.set(0.88, 1.18, 0.88);
+    }
+
+    this.velocity.y = jumpSpeed;
+  }
+
+  _spawnSuperBounceShockwave() {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const p = this.dustParticles[i % this.dustParticles.length];
+      if (p) {
+        p.mesh.position.set(
+          this.position.x + Math.cos(angle) * 0.45,
+          this.position.y + 0.1,
+          this.position.z + Math.sin(angle) * 0.45
+        );
+        p.life = p.maxLife * 1.5;
+        p.mesh.visible = true;
+        p.mesh.scale.set(1.6, 1.6, 1.6);
+        p.mesh.material.opacity = 0.85;
+      }
+    }
+  }
+
+  _onLanded(input) {
+    this.lastLandTime = performance.now();
+    this.knockbackTimer = 0;
+    // Landing squish
+    this.squashStretch.set(1.22, 0.78, 1.22);
+
+    // If holding down Jump (Space) on landing, immediately bounce into next combo!
+    if (input && input.isJump() && this.knockbackTimer <= 0) {
+      this._performBounce();
+    }
   }
 
   setVisible(visible) {
